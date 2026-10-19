@@ -5,6 +5,7 @@
 **Document:** 00 — project purpose and end goal  
 **Status:** Initial architectural baseline; implementation and benchmarks pending  
 **Date:** 2026-10-19
+**Development strategy:** emulator-first; see [03-implementation-roadmap.md](03-implementation-roadmap.md)
 
 ## 1. Vision
 
@@ -31,7 +32,7 @@ The machine is intended to boot and run Apple IIe software in a compatibility co
 | Legacy display | Apple IIe text, LORES, HIRES, and double-high-resolution (DHIRES), including applicable mixed/80-column variations |
 | Native display | **MHIRES**, initially 640×200 at 4 bits per pixel, presented via VGA with vertical replication |
 | Display output | VGA only; the separate Apple FPGA project's LCD is explicitly out of scope |
-| Native software | GEOS-inspired graphical operating environment with a documented application and driver ABI |
+| Native software | **GEOS-Max** (provisional name), a GEOS-inspired graphical operating environment with a documented application and driver ABI |
 | Legacy software strategy | Native access to ProDOS-formatted storage; Apple IIe compatibility boot; investigate launching selected ProDOS 8 applications from the native desktop |
 
 ## 3. Intended user experience
@@ -71,7 +72,7 @@ No LCD path, Apple IIgs SHGR compatibility, ADB compatibility, or IIgs-specific 
 
 ## 5. Native software end goal
 
-The planned operating environment includes:
+The planned operating environment, provisionally named **GEOS-Max**, includes:
 
 - A small native kernel/runtime with memory allocation, drivers, file operations, timers, input events and application loading.
 - A graphics and widget library with a stable API, resource handling, clipping and redraw/dirty-region semantics.
@@ -115,6 +116,9 @@ Apple IImax is a **separate repository and product**, not a permanent developmen
 
 ## 9. Initial delivery milestones
 
+**Sequence decision (2026-10-19):** begin with the owner's existing functioning IIgs-oriented emulator, adapt it to the entire Apple IImax machine contract, and validate original Apple IIe firmware/peripherals in that emulator. Then use the validated emulator to develop GEOS-Max and native applications **before migrating the Apple IImax hardware implementation into RTL in this repository**. The table below describes broad deliverables rather than a strict chronological gate sequence; [Document 03](03-implementation-roadmap.md) is authoritative for the implementation order and acceptance gates.
+
+
 | Phase | Milestone | Proof |
 | --- | --- | --- |
 | A | Board and SDRAM bring-up | Deterministic memory tests, measured timing, working VGA output |
@@ -131,6 +135,7 @@ The phases are an ordering guide, not an assertion that previous Apple FPGA hard
 
 - [00-introduction.md](00-introduction.md) — motivation, intended experience and non-goals.
 - [01-hardware-architecture.md](01-hardware-architecture.md) — working hardware contracts, timing assumptions and open decisions.
-- [02-software-architecture.md](02-software-architecture.md) — native OS, applications, development workflow and ProDOS compatibility research.
+- [02-software-architecture.md](02-software-architecture.md) — GEOS-Max native OS, applications, development workflow and ProDOS compatibility research.
+- [03-implementation-roadmap.md](03-implementation-roadmap.md) — emulator-first migration, Apple IIe validation, debugging infrastructure, GEOS-Max development and RTL parity.
 
 These initial documents intentionally distinguish **agreed direction**, **provisional engineering targets**, and **open investigations**. Future design-review sessions may refine individual documents without rewriting the project's overall purpose.
