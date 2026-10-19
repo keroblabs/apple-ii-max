@@ -94,6 +94,8 @@ Legacy compatibility is an important part of the machine's identity, but has sev
 
 **Not a baseline promise:** seamless windowed execution of arbitrary ProDOS applications alongside native apps. ProDOS 8 programs can manipulate video RAM, zero page, stack, language-card memory, slot hardware and operating-system globals directly; this makes binary compatibility substantially harder than translating a file API.
 
+**Research-only restriction:** Reverse engineering or adaptation of third-party legacy applications is exclusively private, noncommercial research. Application-specific disassemblies, traces, patches and derived binaries are **not to be published or distributed**. Redistributable project-created compatibility tools are separate. The public repository must not include proprietary ROM or application images without established rights. See [Document 02](02-software-architecture.md) and [Document 03](03-implementation-roadmap.md).
+
 The detailed alternatives, trade-offs and proof-of-concept plan belong in [02-software-architecture.md](02-software-architecture.md).
 
 ## 7. Relationship to other projects
