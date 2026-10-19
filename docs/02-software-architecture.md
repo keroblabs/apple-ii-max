@@ -1,18 +1,18 @@
-# Apple IImax — Software Architecture
+# Apple IImax — GEOS-Max Software Architecture
 
-**Document:** 02 — native operating environment and compatibility strategy  
+**Document:** 02 — GEOS-Max native operating environment and compatibility strategy  
 **Repository:** `keroblabs/apple-ii-max`  
 **Status:** Software design direction and research programme; interfaces and tooling not yet frozen  
 **Date:** 2026-10-19  
-**Related:** [Introduction](00-introduction.md) · [Hardware architecture](01-hardware-architecture.md)
+**Related:** [Introduction](00-introduction.md) · [Hardware architecture](01-hardware-architecture.md) · [Implementation roadmap](03-implementation-roadmap.md)
 
 ## 1. Mission
 
-The native Apple IImax software environment is a **GEOS-inspired desktop and application platform**, purpose-built for a 65816 running on a machine with approximately 1 MiB RAM, a preliminary maximum CPU clock of 2.8 MHz, an MHIRES framebuffer, and a separate bank-`$EF` native-device interface.
+**GEOS-Max** (provisional name) is the native Apple IImax operating environment: a **GEOS-inspired desktop and application platform**, purpose-built for a 65816 running on a machine with approximately 1 MiB RAM, a preliminary maximum CPU clock of 2.8 MHz, an MHIRES framebuffer, and a separate bank-`$EF` native-device interface.
 
 The goal is **more than a graphical launcher**. It is a coherent software stack providing startup, drivers, filesystem access, a window/widget API, a desktop/file manager, an application loader and a viable development workflow. Historical Apple II software matters too: the native environment should exchange files with ProDOS, allow a dependable way to enter legacy Apple IIe execution, and investigate whether selected ProDOS 8 programs can run from the graphical desktop.
 
-We are **not** building a port of Apple IIgs GS/OS, not copying GEOS internals, and not making the X11 protocol a dependency. We may take inspiration from GEOS, the Apple II Desktop, Smalltalk-like resource composition and our separate Embedded X11 work, but Apple IImax has its own ABI and constraints.
+GEOS-Max is **our own operating system**, not a port of Apple IIgs GS/OS or a copy of GEOS internals, and it does not depend on the X11 protocol. We may take inspiration from GEOS, the Apple II Desktop, Smalltalk-like resource composition and our separate Embedded X11 work, but Apple IImax has its own ABI and constraints.
 
 ## 2. Constraints that shape the OS
 
@@ -178,6 +178,9 @@ A native filesystem implementation should initially be straightforward and testa
 
 ## 6. ProDOS: distinguish three very different compatibility objectives
 
+**Research boundary:** Reverse engineering and adaptation of third-party legacy applications are strictly **private, noncommercial research activities**. They are **not for publication, distribution or commercial reuse**. This restriction applies to disassemblies, annotated proprietary binaries, patches derived from third-party code, application-specific traces and private research notes. The public Apple IImax project may describe generic compatibility interfaces and tests that it independently owns, but it must not publish the private reverse-engineering outputs. No copyrighted ROM/application/disk image may be committed to this public repository unless redistribution rights have been established. Research-only intent does not itself grant copyright or licence permission; obtain and use software lawfully.
+
+
 “Run ProDOS applications like Wine runs Windows software” is an interesting and valuable research direction, but it has technical limits. Wine translates operating-system APIs in an environment with process/address-space conventions; an Apple II ProDOS 8 application may depend on direct 6502 execution **and** arbitrary Apple IIe hardware state. We therefore must not equate implementing ProDOS file calls with full binary compatibility.
 
 ### Level 1 — ProDOS filesystem interoperability (recommended first)
@@ -242,9 +245,9 @@ Potential outcomes include:
 - A replacement device/firmware thunk for a well-documented interface.
 - A **native reimplementation** of the application's useful function instead of attempting fragile binary translation.
 
-Prioritise documented interfaces and software we have the rights to inspect or modify. Do not bundle proprietary ROMs, disk images or modified applications without redistribution rights. Record supported software versions, test fixtures and compatibility limitations openly.
+Prioritise documented interfaces and software we may lawfully inspect. **Keep reverse-engineering artefacts, proprietary binaries, application-specific traces, disassemblies, annotations, transformed executables and patches in private research storage only**; never publish them or use them commercially. A public generic compatibility test suite may include independently written sample programs and materials confirmed redistributable. Track private application versions, hashes, observations and limitations in non-public research notes rather than publishing them in this repository.
 
-The phrase “reverse engineer ProDOS applications” is therefore a **research route**, not a requirement to disassemble or rewrite every existing application.
+The phrase “reverse engineer ProDOS applications” is therefore a **private research route**, not a requirement to disassemble or rewrite every existing application and not a distribution goal.
 
 ## 7. Recommended compatibility experiment sequence
 
@@ -256,12 +259,14 @@ The phrase “reverse engineer ProDOS applications” is therefore a **research 
 | P3 | Trace a minimal MLI-only program | Every `$BF00` call and its parameters/results are accounted for |
 | P4 | Substitute selected MLI file services in an isolated test session | Same observable behaviour as reference ProDOS for that test |
 | P5 | Test controlled return from legacy execution | Desktop recovers correctly or explicitly reboots cleanly |
-| P6 | Profile one real application | Document compatibility, failure causes, and cost of adaptation |
+| P6 | Profile one lawfully obtained real application in private research | Retain non-public compatibility notes, failure causes and adaptation-cost findings |
 | P7 | Decide whether GUI-windowed compatibility is worth it | Evidence-based decision; no automatic commitment |
 
 Keep **binary execution tests separate from filesystem parsing tests**. Success in P0/P1 says nothing about P3–P7.
 
 ## 8. Development workflow and tools
+
+GEOS-Max development starts **on the Apple IImax emulator**, after its hardware model has passed the Apple IIe compatibility gate. The emulator is the primary execution, diagnostic, automated-test and investigation environment, not a stopgap used only until FPGA hardware exists. Full emulator capability, including bank-aware tracing, stepping, breakpoints, watchpoints, device inspection, deterministic replay and state snapshots, is a project-level requirement specified by [Document 03](03-implementation-roadmap.md); the particular implementation is deliberately not selected here.
 
 The software project should be developed and verified **before depending on a physical VGA display or native storage controller**.
 
@@ -324,7 +329,7 @@ This is a suggested eventual organisation, not a claim that those files currentl
 
 **SW-6 — selected ProDOS binary compatibility research:** bounded MLI shim proof-of-concept and compatibility profiles; only expand scope if objective tests justify it.
 
-These stages can overlap hardware bring-up and emulator development, but **none is assumed complete today**.
+These are **GEOS-Max software milestones**, subordinate to the emulator-first acceptance gates in [03-implementation-roadmap.md](03-implementation-roadmap.md). Hardware RTL migration starts after the emulator has validated the Apple IImax hardware contract and software development is underway; **none of these milestones is assumed complete today**.
 
 ## 10. Explicit decisions still open
 
