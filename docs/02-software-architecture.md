@@ -285,8 +285,12 @@ An SDL- or equivalent-based host display can emulate VGA output for testing; tha
 ### Suggested source organisation
 
 ```text
+emulator/       machine model, diagnostics, stepping and trace tools
+validation/     Apple IIe and IImax test images, manifests and fixtures
+rtl/            hardware RTL (later migration)
+fpga/           QMTECH 5CEFA5 constraints/implementation
 firmware/       boot code, vectors, fixed ROM services
-os/
+geos-max/
   kernel/       memory, interrupts, event loop, loader, diagnostics
   hal/          hardware-neutral driver contracts
   drivers/      video, input, block devices, timers
@@ -294,13 +298,13 @@ os/
   gui/          fonts, drawing, windows, widgets, resource loader
   desktop/      file manager and shell
   compat/       legacy session manager, MLI investigations, test tools
-apps/           native sample applications
+applications/   native sample applications
 tools/          host resource compiler, image conversion, executable packer
 tests/          unit tests, emulator scenarios, compatibility fixtures
 docs/           specifications and future ABI/compatibility reports
 ```
 
-This is a suggested eventual organisation, not a claim that those files currently exist.
+This is a suggested eventual organisation, not a claim that those files currently exist. [Document 03](03-implementation-roadmap.md) is authoritative for workstream boundaries, emulator-first sequencing, and the handling of validation fixtures in the public repository. Proprietary media and private reverse-engineering material must not be committed.
 
 ### Regression test priorities
 
