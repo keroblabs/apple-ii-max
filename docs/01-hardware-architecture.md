@@ -20,8 +20,8 @@ Apple IImax uses a 65816 CPU and 1 MiB initial RAM allocation to extend an Apple
 - Apple IImax-only registers: 64 KiB window **`$EF:0000–FFFF`**, `REGSEL`, independent of legacy decoding.
 - Firmware: full 64 KiB read-only **bank `$FF`**; appropriate `$FF:D000–FFFF` content mirrored at `$00:D000–FFFF` for reset/legacy ROM whenever ROM is selected.
 - Conventional Apple IIe video from MAIN/AUX banks `$00/$01`; new MHIRES framebuffer at a programmable SDRAM address.
-- SDRAM reads: first prototype uses **8-byte (64-bit) cache lines** from two 32-bit SDRAM data beats, provided the chosen controller supports a suitable transfer.
-- Cache: read-only; writes go through to SDRAM using byte masking and invalidate matching read buffers. No write-back cache.
+- SDRAM reads: the current reusable `apple_fpga` RTL uses **4-byte (32-bit) cache lines** with one 32-bit SDRAM beat; Apple IImax proposes an **8-byte (64-bit) line** from two 32-bit beats as a measured optimisation, not an implemented feature.
+- Cache: the reusable RTL now has separate direct-mapped instruction and data read caches; byte writes pass through to SDRAM and invalidate both caches. Apple IImax integration and any 64-bit expansion remain subject to adapter/RTL validation. No write-back cache.
 
 ### Explicitly deferred
 
@@ -129,16 +129,14 @@ The full 64 KiB of bank `$FF` is ROM. How enhanced IIe internal Cx ROM mappings 
 ### Physical interface versus transfer size
 
 - External SDRAM data bus: **32 bits**.
-- Proposed logical read transfer: **64 bits** in a two-beat burst of 32-bit words, aligned to eight bytes.
+- Implemented `apple_fpga` transfer: **32 bits** in one beat (burst length 1), aligned to four bytes. Proposed Apple IImax extension: **64 bits** in two 32-bit beats (burst length 2), aligned to eight bytes.
 - A “64-bit cache line” **does not mean 64 physical SDRAM data pins**.
 - SDRAM clock, read latency (including activate/precharge/CAS), turnaround, controller scheduling and refresh are presently **unmeasured for this board**.
 - Actual sustained throughput depends on SDRAM type, command timing, burst capabilities, address locality and video arbitration.
 
 ### CPU read cache baseline
 
-A simple 8-byte tagged read buffer contains: aligned physical SDRAM base address, data, valid bit and selection mux for one byte. Program/data accesses from RAM may use it. A hit avoids SDRAM; a miss enqueues a burst and may stall the CPU.
-
-A **split program/data pair of 8-byte buffers** is a candidate to benchmark, not a required first implementation. Program/data qualification (VPA/VDA or equivalent) is needed before adopting that split. Cross-line sequential instruction fetches, branches, stack/data traffic and legacy memory mapping all affect hit rate.
+For the proposed 64-bit upgrade, each 8-byte tagged read line needs an aligned translated physical base/tag, data, validity and byte selection; a miss requests a two-beat read and may stall the CPU. The current reusable `apple_fpga` implementation instead has **two independent 32-bit direct-mapped caches**, one for instruction reads and one for data reads, each with 256 entries (1 KiB of data per cache). Hits avoid SDRAM. The split is implemented in that source repository but is **not yet integrated into Apple IImax**. The 65816 adapter must provide valid program-versus-data qualification (VPA/VDA or equivalent), and native/legacy address translation must preserve cache coherence. Branches, writes, stack/data traffic, line alignment and physical MAIN/AUX interleaving will affect hit rates.
 
 The suggested “two hits per three reads” corresponds to a **66.7% hit rate for the measured reads** and is a performance hypothesis only. It cannot guarantee fixed completion of bus writes or VGA fetches, and no actual workload hit rate has been measured.
 
@@ -150,6 +148,40 @@ The suggested “two hits per three reads” corresponds to a **66.7% hit rate f
 - Writes to I/O, ROM or unmapped space follow their distinct target's rules; never direct such writes through the RAM cache.
 - CPU writes must be visible to later CPU reads and video reads; a video line already buffered may legitimately show earlier pixel data until the next fetch.
 - Cache tags must use translated physical addresses or be invalidated on all mapping changes. Any future DMA engine other than VGA may require additional coherency rules.
+
+### Reusable SDRAM RTL baseline and 64-bit burst investigation (19 October 2026)
+
+This is an **implementation observation about the separate** [`keroblabs/apple_fpga`](https://github.com/keroblabs/apple_fpga) **repository**, not a claim that its SDRAM or caches have already been ported to Apple IImax. The current references are [the bridge design](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_mmu_bridge_design.md), [the SDRAM controller](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_block.v), [the MMU bridge](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_mmu_bridge.v), and [the direct-mapped cache](https://github.com/keroblabs/apple_fpga/blob/main/verilog/cache/direct_mapped_cache.v).
+
+**Current working source baseline:**
+
+- Two Winbond **W9825G6KH-6 x16 SDRAM chips** work in parallel on a **32-bit physical data bus**, with four byte-mask (DQM) signals. This is not a 64-bit physical bus. The controller operates at **100.7 MHz** by default with **CAS latency 2**, a **single 32-bit read beat (BL=1)**, explicit PRECHARGE after each access, and refresh control. It exposes a 24-bit physical byte address, currently covering 16 MiB of the pair's 64 MiB capacity.
+- The MMU contains **two independent instruction/data direct-mapped read caches**. `cpu_m1=1` selects instruction reads; `cpu_m1=0` selects data reads. Each cache has **256 × 4-byte lines = 1 KiB** by default (**2 KiB total cache data**); the read paths use sequential RAM lookup, not speculative parallel SDRAM reads. CPU byte writes are masked/write-through and invalidate both caches. Cache coherence for external non-CPU writers and remapping still requires an integration policy.
+- Current CPU cache hits complete in **two 100.7 MHz MMU clocks**. **Video bypasses the CPU caches**, and the current phase scheduler **unconditionally performs one 32-bit video read every video half-phase**, whether the VGA prefetcher needs a new word or not. The VGA line buffers prevent scanout from waiting on those reads; they do not yet remove the redundant SDRAM transactions.
+- The cited repository reports lint and simulation regression passes for the split-cache/MMU variants. Neither a real 65816 adapter nor physical Cyclone V/SDRAM post-route timing has been certified for Apple IImax.
+
+**Observed no-contention timing (100.7 MHz, CAS 2, grade -6, default timing guard):**
+
+| Operation | Current MMU clocks | Calculated latency |
+| --- | ---: | ---: |
+| Instruction/data cache hit | 2 | 19.861 ns |
+| Instruction/data cache miss | 17 | **168.818 ns** |
+| Byte write-through | 15 | 148.957 ns |
+| Uncached video read | 15 | 148.957 ns |
+
+These are **nominal, no-refresh pipeline figures**, **not absolute worst-case latencies**. They exclude queued requests, refresh preemption, CPU-address setup, downstream sampling, phase alignment and physical timing closure. At **2.8 MHz**, a 50/50 CPU clock has a **178.571 ns half-period**: a 17-clock miss leaves approximately **9.753 ns** before that boundary. Requiring a further synchronous sampling clock produces **18 × 9.930487 = 178.749 ns**, already slightly longer than the half-period, before any board or CPU timing margin. A fully unstalled 2.8 MHz processor is therefore **not yet demonstrated**; the initial 2.8 MHz limit remains provisional and must be backed by a ready/stall protocol. At 3 MHz a 166.667 ns half-period is shorter than the present 168.818 ns miss path even without refresh.
+
+**Proposed BL=2 / 64-bit cache-line experiment:**
+
+1. The W9825G6KH mode register supports **sequential burst length 2** (A[2:0]=001) and **burst read / single write** (A9=1). Retain the two x16 chips and four DQM byte lanes; issue an **8-byte-aligned** read, accepting two successive 32-bit beats into one 64-bit cache line. The existing CL2 BL1 mode value `13'h0220` would become `13'h0221` for BL2, subject to full controller/timing-model verification. The SDRAM's two beats occur one master clock apart; **this does not require more DQ pins**.
+2. Update the SDRAM controller to capture **both** read beats and to honour the burst/precharge timing; update the bridge's read-data/ready contract, the instruction/data cache data widths, tags/index/byte selection (8-byte line address: low three byte-address bits), and its physical-address translation/invalidation checks. Decide explicitly whether video remains 32-bit per response with an 8-byte read buffer or consumes pairs of packed video words. Preserve **single-byte masked writes** and self-modifying-code coherence.
+3. The main expected gain is **fewer expensive SDRAM ACTIVATE/READ/PRECHARGE sequences per byte of sequential code or video**. For ideal sequential reads from an ordinary linearly mapped physical region, a 4-byte line gives one miss followed by three hits (75% hits), while an 8-byte line gives one miss followed by seven hits (87.5% hits). In the existing MAIN/AUX-interleaved range, sequential accesses confined to one logical bank see only **two** of the four physical bytes per 32-bit line, versus **four** of eight bytes per 64-bit line; idealised hit rates there are 50% versus 75%. These are locality illustrations, **not measured hit rates**.
+4. BL=2 **cannot shorten the initial CAS/row-activation delay** and adds a second data beat; a completely cold CPU miss should **not be assumed faster** than today's 17-clock baseline. The current controller also holds read completion until PRECHARGE/tRP recovery, even after the read data have been captured. An early-data/late-bank-release response design could reduce *perceived* CPU latency, but the SDRAM would remain occupied until closing/recovery; it needs a separate scheduler and correctness review.
+5. For a materially higher CPU clock, benchmark **demand-driven video requests/line-buffer prefetch** instead of the unconditional video access on every low phase, alongside BL=2 caches, early read delivery, possible row/bank scheduling refinements, and explicit **65816 wait-state insertion**. A faster *configured* CPU clock is not the same as a guaranteed zero-wait sustainable instruction rate. Investigate **3–4 MHz and higher with stalls** in simulation as experiments, rather than approving a new MHz figure from this table alone.
+
+**Acceptance measurements:** compare BL1 versus BL2 on repeated sequential instruction streams, MAIN/AUX-interleaved instruction streams, branching/stack activity, read/write mixes, cache conflicts and invalidations, video prefetch plus native MHIRES traffic, refresh collisions, phase overrun, and per-instruction executed throughput. Capture worst-case ready/stall duration with the actual 65816 core and enforce SDRAM pin-level timing and post-route board setup/hold before revising the clock target. The original `apple_fpga` source is to remain independent until a deliberate Apple IImax integration step.
+
+Reference: [Winbond W9825G6KH datasheet, mode register and sequential burst tables](https://evelta.com/content/datasheets/153-W9825G6KH-6.pdf#page=20).
 
 ### Timing and arbitration
 
