@@ -4,7 +4,7 @@
 **Repository:** `keroblabs/apple-ii-max`  
 **Status:** Proposed architectural contract; RTL, board-level timing and integration not yet approved  
 **Date:** 2026-10-19  
-**Related:** [Project introduction](00-introduction.md) · [Software architecture](02-software-architecture.md)
+**Related:** [Project introduction](00-introduction.md) · [GEOS-Max software architecture](02-software-architecture.md) · [Implementation roadmap](03-implementation-roadmap.md)
 
 ## 1. Goals and constraints
 
@@ -252,5 +252,7 @@ Measure the **actual** Cyclone V / SDRAM controller clocks, worst-case access la
 - [WDC W65C816S datasheet](https://www.westerndesigncenter.com/wdc/documentation/w65c816s.pdf) — registers, reset, bus qualification, interrupt vectors and timing.
 - [ProDOS 8 technical reference](https://prodos8.com/docs/techref/) — legacy memory conventions and software-visible interfaces.
 - [Apple FPGA source repository](https://github.com/keroblabs/apple_fpga) — candidate legacy softswitch, VGA and SDRAM-related implementation and verification work.
+
+**Development sequence:** The machine contract specified here is implemented and validated first in the existing emulator, then used to develop GEOS-Max, before Apple IImax RTL and QMTECH board integration. See [03-implementation-roadmap.md](03-implementation-roadmap.md).
 
 **Design status:** This document describes our current target architecture. It does not assert that the 65816 core, 5CEFA5 port, SDRAM timing, MHIRES or full legacy compatibility has been implemented or validated.
