@@ -1,14 +1,14 @@
-# Apple IImax — Hardware Architecture
+# Apple II Pro — Hardware Architecture
 
 **Document:** 01 — hardware specification baseline  
-**Repository:** `keroblabs/apple-ii-max`  
+**Repository:** `keroblabs/apple-ii-pro`  
 **Status:** Proposed architectural contract; RTL, board-level timing and integration not yet approved  
 **Date:** 2026-10-19  
-**Related:** [Project introduction](00-introduction.md) · [GEOS-Max software architecture](02-software-architecture.md) · [Implementation roadmap](03-implementation-roadmap.md)
+**Related:** [Project introduction](00-introduction.md) · [GEOS-Pro software architecture](02-software-architecture.md) · [Implementation roadmap](03-implementation-roadmap.md)
 
 ## 1. Goals and constraints
 
-Apple IImax uses a 65816 CPU and 1 MiB initial RAM allocation to extend an Apple IIe-compatible machine. It retains the original Apple IIe softswitch and peripheral address scheme, adds **bank `$EF` native registers**, provides **bank `$FF` firmware ROM**, and scans both legacy video and new **MHIRES** video through VGA. No Apple IIgs SHGR, `$E0/$E1` shadow banks, ADB or LCD output is required.
+Apple II Pro uses a 65816 CPU and 1 MiB initial RAM allocation to extend an Apple IIe-compatible machine. It retains the original Apple IIe softswitch and peripheral address scheme, adds **bank `$EF` native registers**, provides **bank `$FF` firmware ROM**, and scans both legacy video and new **PHIRES** video through VGA. No Apple IIgs SHGR, `$E0/$E1` shadow banks, ADB or LCD output is required.
 
 ### Agreed or strongly preferred
 
@@ -17,15 +17,15 @@ Apple IImax uses a 65816 CPU and 1 MiB initial RAM allocation to extend an Apple
 - Clock limit: **2.8 MHz maximum initial target**, subject to board measurements and possible later revision; slower legacy timing may be necessary for particular programs.
 - Physical memory: SDRAM with no full-frame video shadow copies.
 - Standard Apple IIe I/O and slot decode preserved: `$C000–CFFF`, `DEVSEL`, `IOSEL`, `IOSTB`.
-- Apple IImax-only registers: 64 KiB window **`$EF:0000–FFFF`**, `REGSEL`, independent of legacy decoding.
+- Apple II Pro-only registers: 64 KiB window **`$EF:0000–FFFF`**, `REGSEL`, independent of legacy decoding.
 - Firmware: full 64 KiB read-only **bank `$FF`**; appropriate `$FF:D000–FFFF` content mirrored at `$00:D000–FFFF` for reset/legacy ROM whenever ROM is selected.
-- Conventional Apple IIe video from MAIN/AUX banks `$00/$01`; new MHIRES framebuffer at a programmable SDRAM address.
-- SDRAM reads: the current reusable `apple_fpga` RTL uses **4-byte (32-bit) cache lines** with one 32-bit SDRAM beat; Apple IImax proposes an **8-byte (64-bit) line** from two 32-bit beats as a measured optimisation, not an implemented feature.
-- Cache: the reusable RTL now has separate direct-mapped instruction and data read caches; byte writes pass through to SDRAM and invalidate both caches. Apple IImax integration and any 64-bit expansion remain subject to adapter/RTL validation. No write-back cache.
+- Conventional Apple IIe video from MAIN/AUX banks `$00/$01`; new PHIRES framebuffer at a programmable SDRAM address.
+- SDRAM reads: the current reusable `apple_fpga` RTL uses **4-byte (32-bit) cache lines** with one 32-bit SDRAM beat; Apple II Pro proposes an **8-byte (64-bit) line** from two 32-bit beats as a measured optimisation, not an implemented feature.
+- Cache: the reusable RTL now has separate direct-mapped instruction and data read caches; byte writes pass through to SDRAM and invalidate both caches. Apple II Pro integration and any 64-bit expansion remain subject to adapter/RTL validation. No write-back cache.
 
 ### Explicitly deferred
 
-Exact CPU core and timing interface, SDRAM controller implementation and measured latency, physical bank/page organisation, video palette wiring, storage-device electronics, exact `REGSEL` register offsets, full 640×480 MHIRES acceptance, 65816 legacy timing compatibility limits, and board pin assignments.
+Exact CPU core and timing interface, SDRAM controller implementation and measured latency, physical bank/page organisation, video palette wiring, storage-device electronics, exact `REGSEL` register offsets, full 640×480 PHIRES acceptance, 65816 legacy timing compatibility limits, and board pin assignments.
 
 ## 2. Logical system block diagram
 
@@ -44,11 +44,11 @@ Exact CPU core and timing interface, SDRAM controller implementation and measure
       +--> RAM read buffer(s) / read bypass / byte-write path
                                       |
                             SDRAM request scheduler <--- Legacy video DMA
-                                      ^                 MHIRES video DMA
+                                      ^                 PHIRES video DMA
                                       |                         |
                               32-bit SDRAM               video line buffers
                                                                 |
-                                                    legacy/MHIRES pixel pipeline
+                                                    legacy/PHIRES pixel pipeline
                                                                 |
                                                        640x480 VGA output
 ```
@@ -81,7 +81,7 @@ The following are **CPU-visible addresses**, not a claim that every RAM byte is 
 | `$01:0000–FFFF` | Explicit auxiliary RAM backing for native 65816 use; details of upper-bank compatibility overlays to be resolved |
 | `$02:0000–$0F:FFFF` | Extended RAM, nominally direct/linear in CPU address space |
 | `$10–$EE` | Reserved; no RAM or I/O alias is implied |
-| `$EF:0000–FFFF` | Apple IImax native register window, `REGSEL`, not ordinary RAM |
+| `$EF:0000–FFFF` | Apple II Pro native register window, `REGSEL`, not ordinary RAM |
 | `$F0–$FE` | Reserved; no alias assumed |
 | `$FF:0000–FFFF` | 64 KiB ROM, directly executable/readable via long addresses |
 
@@ -97,13 +97,13 @@ A change in mapping must invalidate or correctly retag the CPU's cached RAM line
 
 ### Slot compatibility and `REGSEL`
 
-- Keep `DEVSEL`, `IOSEL` and `IOSTB` as distinct compatibility select functions; do not globally widen `$C0xx` to an Apple IImax-only 4 KiB register map.
+- Keep `DEVSEL`, `IOSEL` and `IOSTB` as distinct compatibility select functions; do not globally widen `$C0xx` to an Apple II Pro-only 4 KiB register map.
 - Preserve Apple IIe softswitch read/write side effects and status values. A shared physical peripheral may offer an Apple IIe interface and a richer `$EF` interface, but both must be explicitly specified.
 - Decode bank `$EF` from the **full 24-bit qualified CPU address**, with a documented access-valid handshake. `REGSEL` must not spuriously assert during invalid/internal CPU cycles.
 - Register space is a design capacity, **not** proof that all 64 KiB contain implemented registers.
 - Hardware registers may have read side effects; never speculative-prefetch or RAM-cache them.
 
-Example future subdivisions, **not register assignments**: configuration/MMU, interrupt controller, mouse/keyboard extensions, storage, MHIRES palette/framebuffer, timers and diagnostics.
+Example future subdivisions, **not register assignments**: configuration/MMU, interrupt controller, mouse/keyboard extensions, storage, PHIRES palette/framebuffer, timers and diagnostics.
 
 ## 5. Boot ROM and reset
 
@@ -111,7 +111,7 @@ A real 65816 resets in **emulation mode**, with PBR `$00`, and fetches the reset
 
 On reset, ensure the `$00:D000–FFFF` ROM view contains the needed vector, sourced from bank `$FF`'s final 12 KiB. The boot-ROM path must be available before SDRAM has finished power-up/initialisation, or the CPU must remain reset/stalled until both boot and RAM dependencies are ready.
 
-Proposed Apple IImax firmware sequence:
+Proposed Apple II Pro firmware sequence:
 
 1. CPU starts in emulation state and fetches the conventional bank-zero reset vector.
 2. The firmware runs a small compatibility-safe bootstrap.
@@ -120,7 +120,7 @@ Proposed Apple IImax firmware sequence:
 5. Install or validate the native interrupt dispatch strategy and any required bank-zero state.
 6. Set the appropriate 65816 registers/flags, switch to native mode using the architecturally correct sequence, and launch the native kernel.
 
-**Vector caveat:** 65816 native interrupt vectors occupy bank-zero upper-ROM locations (including `$00:FFEA–FFEF`). Fixed ROM vectors can target ROM trampolines that dispatch to RAM drivers. An **unmodified Apple IIe ROM image is not automatically a valid Apple IImax native-mode firmware**; a separate native-aware ROM image or explicitly designed vector overlay is needed.
+**Vector caveat:** 65816 native interrupt vectors occupy bank-zero upper-ROM locations (including `$00:FFEA–FFEF`). Fixed ROM vectors can target ROM trampolines that dispatch to RAM drivers. An **unmodified Apple IIe ROM image is not automatically a valid Apple II Pro native-mode firmware**; a separate native-aware ROM image or explicitly designed vector overlay is needed.
 
 The full 64 KiB of bank `$FF` is ROM. How enhanced IIe internal Cx ROM mappings are sourced from this image, and how to select between legacy and native firmware images, must be specified before firmware integration. Unmodified Apple IIe firmware boot is an acceptance target, not an established fact.
 
@@ -129,14 +129,14 @@ The full 64 KiB of bank `$FF` is ROM. How enhanced IIe internal Cx ROM mappings 
 ### Physical interface versus transfer size
 
 - External SDRAM data bus: **32 bits**.
-- Implemented `apple_fpga` transfer: **32 bits** in one beat (burst length 1), aligned to four bytes. Proposed Apple IImax extension: **64 bits** in two 32-bit beats (burst length 2), aligned to eight bytes.
+- Implemented `apple_fpga` transfer: **32 bits** in one beat (burst length 1), aligned to four bytes. Proposed Apple II Pro extension: **64 bits** in two 32-bit beats (burst length 2), aligned to eight bytes.
 - A “64-bit cache line” **does not mean 64 physical SDRAM data pins**.
 - SDRAM clock, read latency (including activate/precharge/CAS), turnaround, controller scheduling and refresh are presently **unmeasured for this board**.
 - Actual sustained throughput depends on SDRAM type, command timing, burst capabilities, address locality and video arbitration.
 
 ### CPU read cache baseline
 
-For the proposed 64-bit upgrade, each 8-byte tagged read line needs an aligned translated physical base/tag, data, validity and byte selection; a miss requests a two-beat read and may stall the CPU. The current reusable `apple_fpga` implementation instead has **two independent 32-bit direct-mapped caches**, one for instruction reads and one for data reads, each with 256 entries (1 KiB of data per cache). Hits avoid SDRAM. The split is implemented in that source repository but is **not yet integrated into Apple IImax**. The 65816 adapter must provide valid program-versus-data qualification (VPA/VDA or equivalent), and native/legacy address translation must preserve cache coherence. Branches, writes, stack/data traffic, line alignment and physical MAIN/AUX interleaving will affect hit rates.
+For the proposed 64-bit upgrade, each 8-byte tagged read line needs an aligned translated physical base/tag, data, validity and byte selection; a miss requests a two-beat read and may stall the CPU. The current reusable `apple_fpga` implementation instead has **two independent 32-bit direct-mapped caches**, one for instruction reads and one for data reads, each with 256 entries (1 KiB of data per cache). Hits avoid SDRAM. The split is implemented in that source repository but is **not yet integrated into Apple II Pro**. The 65816 adapter must provide valid program-versus-data qualification (VPA/VDA or equivalent), and native/legacy address translation must preserve cache coherence. Branches, writes, stack/data traffic, line alignment and physical MAIN/AUX interleaving will affect hit rates.
 
 The suggested “two hits per three reads” corresponds to a **66.7% hit rate for the measured reads** and is a performance hypothesis only. It cannot guarantee fixed completion of bus writes or VGA fetches, and no actual workload hit rate has been measured.
 
@@ -151,14 +151,14 @@ The suggested “two hits per three reads” corresponds to a **66.7% hit rate f
 
 ### Reusable SDRAM RTL baseline and 64-bit burst investigation (19 October 2026)
 
-This is an **implementation observation about the separate** [`keroblabs/apple_fpga`](https://github.com/keroblabs/apple_fpga) **repository**, not a claim that its SDRAM or caches have already been ported to Apple IImax. The current references are [the bridge design](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_mmu_bridge_design.md), [the SDRAM controller](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_block.v), [the MMU bridge](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_mmu_bridge.v), and [the direct-mapped cache](https://github.com/keroblabs/apple_fpga/blob/main/verilog/cache/direct_mapped_cache.v).
+This is an **implementation observation about the separate** [`keroblabs/apple_fpga`](https://github.com/keroblabs/apple_fpga) **repository**, not a claim that its SDRAM or caches have already been ported to Apple II Pro. The current references are [the bridge design](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_mmu_bridge_design.md), [the SDRAM controller](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_block.v), [the MMU bridge](https://github.com/keroblabs/apple_fpga/blob/main/verilog/sdram/sdram_mmu_bridge.v), and [the direct-mapped cache](https://github.com/keroblabs/apple_fpga/blob/main/verilog/cache/direct_mapped_cache.v).
 
 **Current working source baseline:**
 
 - Two Winbond **W9825G6KH-6 x16 SDRAM chips** work in parallel on a **32-bit physical data bus**, with four byte-mask (DQM) signals. This is not a 64-bit physical bus. The controller operates at **100.7 MHz** by default with **CAS latency 2**, a **single 32-bit read beat (BL=1)**, explicit PRECHARGE after each access, and refresh control. It exposes a 24-bit physical byte address, currently covering 16 MiB of the pair's 64 MiB capacity.
 - The MMU contains **two independent instruction/data direct-mapped read caches**. `cpu_m1=1` selects instruction reads; `cpu_m1=0` selects data reads. Each cache has **256 × 4-byte lines = 1 KiB** by default (**2 KiB total cache data**); the read paths use sequential RAM lookup, not speculative parallel SDRAM reads. CPU byte writes are masked/write-through and invalidate both caches. Cache coherence for external non-CPU writers and remapping still requires an integration policy.
 - Current CPU cache hits complete in **two 100.7 MHz MMU clocks**. **Video bypasses the CPU caches**, and the current phase scheduler **unconditionally performs one 32-bit video read every video half-phase**, whether the VGA prefetcher needs a new word or not. The VGA line buffers prevent scanout from waiting on those reads; they do not yet remove the redundant SDRAM transactions.
-- The cited repository reports lint and simulation regression passes for the split-cache/MMU variants. Neither a real 65816 adapter nor physical Cyclone V/SDRAM post-route timing has been certified for Apple IImax.
+- The cited repository reports lint and simulation regression passes for the split-cache/MMU variants. Neither a real 65816 adapter nor physical Cyclone V/SDRAM post-route timing has been certified for Apple II Pro.
 
 **Observed no-contention timing (100.7 MHz, CAS 2, grade -6, default timing guard):**
 
@@ -179,7 +179,7 @@ These are **nominal, no-refresh pipeline figures**, **not absolute worst-case la
 4. BL=2 **cannot shorten the initial CAS/row-activation delay** and adds a second data beat; a completely cold CPU miss should **not be assumed faster** than today's 17-clock baseline. The current controller also holds read completion until PRECHARGE/tRP recovery, even after the read data have been captured. An early-data/late-bank-release response design could reduce *perceived* CPU latency, but the SDRAM would remain occupied until closing/recovery; it needs a separate scheduler and correctness review.
 5. For a materially higher CPU clock, benchmark **demand-driven video requests/line-buffer prefetch** instead of the unconditional video access on every low phase, alongside BL=2 caches, early read delivery, possible row/bank scheduling refinements, and explicit **65816 wait-state insertion**. A faster *configured* CPU clock is not the same as a guaranteed zero-wait sustainable instruction rate. Investigate **3–4 MHz and higher with stalls** in simulation as experiments, rather than approving a new MHz figure from this table alone.
 
-**Acceptance measurements:** compare BL1 versus BL2 on repeated sequential instruction streams, MAIN/AUX-interleaved instruction streams, branching/stack activity, read/write mixes, cache conflicts and invalidations, video prefetch plus native MHIRES traffic, refresh collisions, phase overrun, and per-instruction executed throughput. Capture worst-case ready/stall duration with the actual 65816 core and enforce SDRAM pin-level timing and post-route board setup/hold before revising the clock target. The original `apple_fpga` source is to remain independent until a deliberate Apple IImax integration step.
+**Acceptance measurements:** compare BL1 versus BL2 on repeated sequential instruction streams, MAIN/AUX-interleaved instruction streams, branching/stack activity, read/write mixes, cache conflicts and invalidations, video prefetch plus native PHIRES traffic, refresh collisions, phase overrun, and per-instruction executed throughput. Capture worst-case ready/stall duration with the actual 65816 core and enforce SDRAM pin-level timing and post-route board setup/hold before revising the clock target. The original `apple_fpga` source is to remain independent until a deliberate Apple II Pro integration step.
 
 Reference: [Winbond W9825G6KH datasheet, mode register and sequential burst tables](https://evelta.com/content/datasheets/153-W9825G6KH-6.pdf#page=20).
 
@@ -189,11 +189,11 @@ A 2.8 MHz nominal cycle is about **357 ns**, with a roughly **179 ns half-cycle*
 
 The SDRAM subsystem should run at a clock suitable for memory timing, decoupled from CPU-visible cycles through a correct handshake and, if clock domains differ, verified CDC.
 
-Arbitration clients: CPU reads/cache fills, CPU byte writes, legacy video DMA, MHIRES DMA, and controller refresh. Use video FIFO/line-buffer low-water thresholds to grant urgency while ensuring CPU progress and refresh obligations. Test worst-case latency, not just average bandwidth.
+Arbitration clients: CPU reads/cache fills, CPU byte writes, legacy video DMA, PHIRES DMA, and controller refresh. Use video FIFO/line-buffer low-water thresholds to grant urgency while ensuring CPU progress and refresh obligations. Test worst-case latency, not just average bandwidth.
 
 ## 7. Video architecture
 
-**Output:** VGA on QMTECH baseboard. The LCD controller stays exclusively in Apple FPGA and is not an Apple IImax integration target.
+**Output:** VGA on QMTECH baseboard. The LCD controller stays exclusively in Apple FPGA and is not an Apple II Pro integration target.
 
 ### Legacy Apple IIe modes
 
@@ -201,7 +201,7 @@ Preserve text (40/80-column as supported), LORES, HIRES, DHIRES, mixed modes and
 
 Retain the Apple IIe's non-linear address ordering and correct video-versus-CPU memory selection. A renderer outputs pixels into a VGA timing pipeline with appropriate centring/scaling. Existing `apple_fpga/verilog/apple_vga/` work is an **integration candidate**, not yet certified for this board.
 
-### MHIRES native mode — initial acceptance target
+### PHIRES native mode — initial acceptance target
 
 | Attribute | Value |
 | --- | --- |
@@ -219,7 +219,7 @@ Retain the Apple IIe's non-linear address ordering and correct video-versus-CPU 
 
 One complete 640×200 framebuffer fits into a 64 KiB processor bank **only if its placement does not cross the bank boundary**. With two framebuffers, two 64 KiB bank allocations would be a convenient *software* arrangement rather than fixed hardware banks.
 
-### Later option: MHIRES 640×480
+### Later option: PHIRES 640×480
 
 A 640×480×4 bpp framebuffer occupies **153,600 bytes (150 KiB)** and crosses bank boundaries; it needs no vertical duplication. The controller should be extensible to this geometry without promising it initially. Any additional source heights or configurable stride are **possible future features** rather than requirements for phase one.
 
@@ -227,8 +227,8 @@ A 640×480×4 bpp framebuffer occupies **153,600 bytes (150 KiB)** and crosses b
 
 | Mode | Bytes/frame | Source bytes/s at 60 Hz | 8-byte bursts/frame |
 | --- | ---: | ---: | ---: |
-| MHIRES 640×200 | 64,000 | 3.84 MB/s | 8,000 |
-| MHIRES 640×480 | 153,600 | 9.216 MB/s | 19,200 |
+| PHIRES 640×200 | 64,000 | 3.84 MB/s | 8,000 |
+| PHIRES 640×480 | 153,600 | 9.216 MB/s | 19,200 |
 
 These figures count each source row **once**. The repeated 200-line rows should come from the video line buffer rather than being fetched a second time. The estimates do **not** include refresh, command overhead, slot-mode rendering costs, SDRAM turnarounds or arbiter margins.
 
@@ -236,7 +236,7 @@ The dominant uncertainty may be **software drawing speed on the 2.8 MHz 65816**,
 
 ### Palette and registers
 
-Propose a 16-entry programmable MHIRES palette with an RGB representation matched to the **actual QMTECH VGA DAC wiring**. It is premature to claim a precise palette bit depth until board inspection. Bank-`$EF` video controls will include mode, framebuffer base, palette and vblank/status; exact offsets and atomic-commit behaviour are to be assigned in a register ABI review.
+Propose a 16-entry programmable PHIRES palette with an RGB representation matched to the **actual QMTECH VGA DAC wiring**. It is premature to claim a precise palette bit depth until board inspection. Bank-`$EF` video controls will include mode, framebuffer base, palette and vblank/status; exact offsets and atomic-commit behaviour are to be assigned in a register ABI review.
 
 ## 8. Device architecture
 
@@ -248,9 +248,9 @@ Propose a 16-entry programmable MHIRES palette with an RGB representation matche
 
 ## 9. Integration from Apple FPGA
 
-The current source repository contains reusable candidates including `verilog/softswitch/softswitch.v` and `verilog/apple_vga/`, with separate `rtl_dev/` IIgs experiments. **Reuse is selective, source locations may change, and no RTL has been imported into Apple IImax by this document.**
+The current source repository contains reusable candidates including `verilog/softswitch/softswitch.v` and `verilog/apple_vga/`, with separate `rtl_dev/` IIgs experiments. **Reuse is selective, source locations may change, and no RTL has been imported into Apple II Pro by this document.**
 
-Before importing: record source revision and provenance, identify dependencies, preserve Apple IIe register behaviour with regression tests, document adaptation for 65816 clocks/24-bit addresses/new SDRAM, and keep existing Apple FPGA work independent. The QMTECH migration and native IImax architecture can evolve independently.
+Before importing: record source revision and provenance, identify dependencies, preserve Apple IIe register behaviour with regression tests, document adaptation for 65816 clocks/24-bit addresses/new SDRAM, and keep existing Apple FPGA work independent. The QMTECH migration and native Apple II Pro architecture can evolve independently.
 
 ## 10. Verification gates and unresolved decisions
 
@@ -261,7 +261,7 @@ Before importing: record source revision and provenance, identify dependencies, 
 - MAIN/AUX read-versus-write remapping, `ALTZP`, `80STORE`, language-card banking and slot ROM decoding.
 - No false `REGSEL`; I/O reads not cached; ROM writes appropriately handled.
 - 64-bit cache line alignment, hit/miss, write invalidation, cache alias/mode changes, byte-mask lanes, SDRAM refresh and memory stalls.
-- VGA text/LORES/HIRES/DHIRES and MHIRES colour, scanline duplication, FIFO underrun prevention, vblank base switching.
+- VGA text/LORES/HIRES/DHIRES and PHIRES colour, scanline duplication, FIFO underrun prevention, vblank base switching.
 - Simultaneous worst-case CPU writes, cache misses and video requests.
 
 ### Hardware measurements
@@ -276,7 +276,7 @@ Measure the **actual** Cyclone V / SDRAM controller clocks, worst-case access la
 4. Native-versus-compatibility mapping policy in upper MAIN/AUX regions and guardrails for switching.
 5. Definitive firmware images/selection and Cx internal/slot ROM implementation.
 6. `$EF` register addresses, read/write semantics and version identification.
-7. VGA colour palette wiring, pixel nibble order, and 640×480 MHIRES viability.
+7. VGA colour palette wiring, pixel nibble order, and 640×480 PHIRES viability.
 8. Slot-compatible storage and legacy peripheral acceptance matrix.
 
 ## 11. Technical references
@@ -285,6 +285,6 @@ Measure the **actual** Cyclone V / SDRAM controller clocks, worst-case access la
 - [ProDOS 8 technical reference](https://prodos8.com/docs/techref/) — legacy memory conventions and software-visible interfaces.
 - [Apple FPGA source repository](https://github.com/keroblabs/apple_fpga) — candidate legacy softswitch, VGA and SDRAM-related implementation and verification work.
 
-**Development sequence:** The machine contract specified here is implemented and validated first in the existing emulator, then used to develop GEOS-Max, before Apple IImax RTL and QMTECH board integration. See [03-implementation-roadmap.md](03-implementation-roadmap.md).
+**Development sequence:** The machine contract specified here is implemented and validated first in the existing emulator, then used to develop GEOS-Pro, before Apple II Pro RTL and QMTECH board integration. See [03-implementation-roadmap.md](03-implementation-roadmap.md).
 
-**Design status:** This document describes our current target architecture. It does not assert that the 65816 core, 5CEFA5 port, SDRAM timing, MHIRES or full legacy compatibility has been implemented or validated.
+**Design status:** This document describes our current target architecture. It does not assert that the 65816 core, 5CEFA5 port, SDRAM timing, PHIRES or full legacy compatibility has been implemented or validated.

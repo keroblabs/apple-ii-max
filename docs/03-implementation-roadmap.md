@@ -1,27 +1,27 @@
-# Apple IImax — Implementation Roadmap
+# Apple II Pro — Implementation Roadmap
 
 **Document:** 03 — execution strategy, project structure and acceptance gates  
-**Repository:** `keroblabs/apple-ii-max`  
+**Repository:** `keroblabs/apple-ii-pro`  
 **Status:** Initial roadmap for independent review; schedules, tool choices and emulator design intentionally open  
 **Date:** 2026-10-19  
-**Related:** [Introduction](00-introduction.md) · [Hardware architecture](01-hardware-architecture.md) · [GEOS-Max software architecture](02-software-architecture.md)
+**Related:** [Introduction](00-introduction.md) · [Hardware architecture](01-hardware-architecture.md) · [GEOS-Pro software architecture](02-software-architecture.md)
 
 ## 1. Executive decision: emulator first, FPGA later
 
-Apple IImax must be built **as a computer platform in software before committing its complete architecture to FPGA RTL**. The owner already has a functioning Apple computer emulator based on an architecture similar to the proposed Apple IImax, originally intended for an Apple IIgs. That existing work is the starting asset for this project, subject to a source-level inventory and review; this roadmap does **not** select or redesign the emulator yet.
+Apple II Pro must be built **as a computer platform in software before committing its complete architecture to FPGA RTL**. The owner already has a functioning Apple computer emulator based on an architecture similar to the proposed Apple II Pro, originally intended for an Apple IIgs. That existing work is the starting asset for this project, subject to a source-level inventory and review; this roadmap does **not** select or redesign the emulator yet.
 
 Our order of work is:
 
-1. Bring the existing emulator development into the **Apple IImax repository**, preserving provenance and a known-working baseline.
-2. Adapt its machine model to the Apple IImax hardware contract in Document 01.
+1. Bring the existing emulator development into the **Apple II Pro repository**, preserving provenance and a known-working baseline.
+2. Adapt its machine model to the Apple II Pro hardware contract in Document 01.
 3. Validate faithful Apple IIe firmware, memory, video, I/O and peripheral behaviour inside the emulator.
-4. Use that validated machine as the primary development and research platform for **GEOS-Max** (provisional OS name), plus native applications.
-5. After the emulated hardware architecture and representative software workloads are stable, bring appropriate Apple FPGA RTL into this repository and implement the Apple IImax FPGA machine.
+4. Use that validated machine as the primary development and research platform for **GEOS-Pro** (provisional OS name), plus native applications.
+5. After the emulated hardware architecture and representative software workloads are stable, bring appropriate Apple FPGA RTL into this repository and implement the Apple II Pro FPGA machine.
 6. Continuously compare FPGA behaviour against the emulator's accepted functional reference, retaining emulator-driven software development even after real hardware runs.
 
-**This is not an instruction to wait for Apple FPGA to move to Cyclone V first.** Apple IImax is now a separate project with its own machine definition and repository; its eventual RTL comes from deliberate migration/adaptation of reusable Apple FPGA components and new RTL developed here. Do not mutate or abandon the separate Apple FPGA project as a side effect.
+**This is not an instruction to wait for Apple FPGA to move to Cyclone V first.** Apple II Pro is now a separate project with its own machine definition and repository; its eventual RTL comes from deliberate migration/adaptation of reusable Apple FPGA components and new RTL developed here. Do not mutate or abandon the separate Apple FPGA project as a side effect.
 
-The progression is **architecture emulation → IIe verification → GEOS-Max → RTL hardware implementation**, with tests and tools developed throughout. These stages may overlap once the upstream acceptance gates are met, but they must not be reversed merely to get pixels on the FPGA sooner.
+The progression is **architecture emulation → IIe verification → GEOS-Pro → RTL hardware implementation**, with tests and tools developed throughout. These stages may overlap once the upstream acceptance gates are met, but they must not be reversed merely to get pixels on the FPGA sooner.
 
 ## 2. Core deliverables in one repository
 
@@ -29,22 +29,22 @@ The repository should contain five first-class development workstreams:
 
 | Workstream | Purpose | Long-term deliverable |
 | --- | --- | --- |
-| Emulator development | Functional and diagnostic Apple IImax machine model, originating from the existing emulator | Executable reference computer, automated tests and interactive research/debug environment |
+| Emulator development | Functional and diagnostic Apple II Pro machine model, originating from the existing emulator | Executable reference computer, automated tests and interactive research/debug environment |
 | Apple IIe validation artefacts | Firmware/peripheral behaviour tests, sample disk images, test programs, manifests and expected results | Reproducible compatibility suite with explicit provenance and licensing |
-| RTL development | 65816 integration, address/MMU, SDRAM, cache, VGA, I/O, ROM and board bring-up | Synthesizable Apple IImax on QMTECH Cyclone V |
-| GEOS-Max development | Native firmware, OS, HAL, drivers, GUI, filesystem, application loader, ProDOS interoperability | Usable graphical operating environment on emulator and FPGA |
+| RTL development | 65816 integration, address/MMU, SDRAM, cache, VGA, I/O, ROM and board bring-up | Synthesizable Apple II Pro on QMTECH Cyclone V |
+| GEOS-Pro development | Native firmware, OS, HAL, drivers, GUI, filesystem, application loader, ProDOS interoperability | Usable graphical operating environment on emulator and FPGA |
 | Applications | Native GUI applications and test tools | File manager, utilities and demonstrator programs, plus application SDK examples |
 
 Cross-cutting tooling includes cross-builds, documentation, image preparation, automated regression, diagnostics, trace analysis and continuous integration.
 
-**Important scope boundary:** legacy Apple IIe compatibility is part of the Apple IImax platform; **Apple IIgs hardware and software compatibility is not a project target**. The existing emulator's IIgs origins do not change the new contract.
+**Important scope boundary:** legacy Apple IIe compatibility is part of the Apple II Pro platform; **Apple IIgs hardware and software compatibility is not a project target**. The existing emulator's IIgs origins do not change the new contract.
 
 ## 3. Proposed repository organisation
 
 This is a **target layout**, not a command to move or rename code before inventory.
 
 ```text
-apple-ii-max/
+apple-ii-pro/
 ├── docs/
 │   ├── 00-introduction.md
 │   ├── 01-hardware-architecture.md
@@ -53,7 +53,7 @@ apple-ii-max/
 │   └── ... future interface, test and compatibility notes
 ├── emulator/
 │   ├── core/                 # CPU, memory map, device/bus model
-│   ├── devices/              # IIe and IImax peripherals
+│   ├── devices/              # IIe and Apple II Pro peripherals
 │   ├── debug/                # machine inspection and research instrumentation
 │   ├── frontends/            # CLI/GUI/automation as chosen later
 │   ├── tests/                # emulator correctness and timing tests
@@ -64,7 +64,7 @@ apple-ii-max/
 │   │   ├── tests/            # independently authored/redistributable fixtures
 │   │   ├── expected/         # permitted golden outputs/traces
 │   │   └── tools/            # local fixture preparation and verification
-│   ├── apple_iimax/          # native hardware-specific scenarios
+│   ├── apple_ii_pro/          # native hardware-specific scenarios
 │   └── prodos/              # redistributable format/API tests
 ├── rtl/
 │   ├── cpu/
@@ -75,7 +75,7 @@ apple-ii-max/
 ├── fpga/
 │   └── qmtech_5cefa5/       # constraints, PLL, pinout, programming, reports
 ├── firmware/                 # startup, ROM images built from project sources
-├── geos-max/
+├── geos-pro/
 │   ├── kernel/
 │   ├── hal/
 │   ├── drivers/
@@ -90,7 +90,7 @@ apple-ii-max/
 └── .github/                  # CI once suitable
 ```
 
-Keep `emulator/`, `rtl/`, `geos-max/`, `applications/` and `validation/` independently buildable/testable where possible. Shared hardware address constants and register semantics must have **one authoritative specification** (Document 01 plus a future versioned register ABI); any generated headers should derive from that, not become conflicting independent truths.
+Keep `emulator/`, `rtl/`, `geos-pro/`, `applications/` and `validation/` independently buildable/testable where possible. Shared hardware address constants and register semantics must have **one authoritative specification** (Document 01 plus a future versioned register ABI); any generated headers should derive from that, not become conflicting independent truths.
 
 ### Public repository and legacy ROM/disk-image handling
 
@@ -100,13 +100,13 @@ This repository is **public**. The goal of having validation artefacts “in the
 - **Keep local/private**: proprietary Apple IIe ROM dumps, copyrighted application media and research-only modified binaries or disassemblies unless distribution rights are expressly established.
 - The validation harness should resolve private local fixtures through configurable paths or an ignored artefact directory, verify their checksums and report **skipped/missing-private-fixture** distinctly from test failure.
 - A public manifest may describe required *types* of media and version constraints without including confidential research notes, copyrighted bytes or a proprietary derivative.
-- Reverse engineering of third-party applications is **strictly private, noncommercial research only**. **Do not publish or distribute application-specific reverse-engineering results or derived patches.** Research-only intent does not itself remove copyright/licensing restrictions. The normal, independent Apple IImax emulator/RTL/GEOS-Max development work is a distinct workstream.
+- Reverse engineering of third-party applications is **strictly private, noncommercial research only**. **Do not publish or distribute application-specific reverse-engineering results or derived patches.** Research-only intent does not itself remove copyright/licensing restrictions. The normal, independent Apple II Pro emulator/RTL/GEOS-Pro development work is a distinct workstream.
 
 Do not make public CI depend on unavailable proprietary fixtures. Provide redistributable smoke tests that run everywhere and an optional private compatibility suite for the developer's environment.
 
 ## 4. Phase 0 — Inventory and establish the existing emulator baseline
 
-**Objective:** establish exactly what is already working before modifying the IIgs-oriented emulator for Apple IImax.
+**Objective:** establish exactly what is already working before modifying the IIgs-oriented emulator for Apple II Pro.
 
 Work:
 
@@ -119,9 +119,9 @@ Work:
 
 **Do not specify a new emulator framework or architecture during this phase.** The first outcome is an inventory and gap analysis of the emulator that already exists, not a premature rewrite.
 
-**Gate E0 — baseline accepted:** emulator builds repeatably and runs at least one original reference scenario; inventory lists supported and absent hardware behaviour; imported code has traceable provenance. No conclusion about Apple IImax compatibility is implied yet.
+**Gate E0 — baseline accepted:** emulator builds repeatably and runs at least one original reference scenario; inventory lists supported and absent hardware behaviour; imported code has traceable provenance. No conclusion about Apple II Pro compatibility is implied yet.
 
-## 5. Phase 1 — Implement the full Apple IImax machine contract in the emulator
+## 5. Phase 1 — Implement the full Apple II Pro machine contract in the emulator
 
 **Objective:** make the emulator's guest-visible behaviour conform to Document 01, independently of physical SDRAM performance.
 
@@ -133,19 +133,19 @@ Necessary capabilities include:
 - `$EF:0000–FFFF` native `REGSEL` register window; `$FF` ROM and its conditional `$00:D000–FFFF` mirror.
 - `DEVSEL`, `IOSEL`, `IOSTB` and the relevant slot/expansion devices expected by validation programs.
 - Existing Apple IIe TEXT/LORES/HIRES/DHIRES and mixed/80-column display behaviours.
-- MHIRES 640×200×4 bpp and a programmable framebuffer base, palette and scan/video mode controls.
-- Native storage and input facilities sufficient for later GEOS-Max work; reserve contracts for multi-button/wheel mouse and block-device semantics.
+- PHIRES 640×200×4 bpp and a programmable framebuffer base, palette and scan/video mode controls.
+- Native storage and input facilities sufficient for later GEOS-Pro work; reserve contracts for multi-button/wheel mouse and block-device semantics.
 - A well-defined way to inspect/configure guest memory and ROM state for research and tests without changing guest-visible hardware behaviour.
 
 The emulator must distinguish the **functional memory model** from the **real SDRAM scheduling model**. A functional RAM read may initially be immediate, while a configurable performance/timing model is added for cache misses, CPU stalls, 8-byte bursts and VGA-DMA arbitration. Neither model is permitted to contradict the address-map or register-visible state.
 
 Treat cache behaviour and SDRAM delay modelling as independent verification concerns. CPU caching in hardware must not be relied on for correct application behaviour. Correct software should behave identically with a cache disabled, cache hits changed or wait states inserted.
 
-**Gate E1 — Apple IImax architecture accepted:** automated tests cover logical decoding, ROM/reset transitions, native/compatibility execution, display modes, I/O read/write side effects, extended-bank access and basic device integration. The emulator must produce actionable failures rather than merely opening a VGA window.
+**Gate E1 — Apple II Pro architecture accepted:** automated tests cover logical decoding, ROM/reset transitions, native/compatibility execution, display modes, I/O read/write side effects, extended-bank access and basic device integration. The emulator must produce actionable failures rather than merely opening a VGA window.
 
 ## 6. Phase 2 — Apple IIe firmware and peripheral compatibility
 
-**Objective:** establish a credible, regression-tested Apple IIe-compatible computer **before** using the emulator as the primary GEOS-Max platform.
+**Objective:** establish a credible, regression-tested Apple IIe-compatible computer **before** using the emulator as the primary GEOS-Pro platform.
 
 Build a compatibility validation matrix with these categories:
 
@@ -224,17 +224,17 @@ All research instrumentation must be disableable for normal-speed execution and 
 
 ### Acceptance of the debugger foundation
 
-Before calling it ready for GEOS-Max work, demonstrate repeatable instruction stepping, bank-aware logical/physical memory inspection, register/softswitch tracing, conditional break/watchpoints, loaded media tests and snapshot/replay for a nontrivial Apple IIe boot-and-I/O scenario. The advanced components can be delivered iteratively; their interfaces should leave room for extensions.
+Before calling it ready for GEOS-Pro work, demonstrate repeatable instruction stepping, bank-aware logical/physical memory inspection, register/softswitch tracing, conditional break/watchpoints, loaded media tests and snapshot/replay for a nontrivial Apple IIe boot-and-I/O scenario. The advanced components can be delivered iteratively; their interfaces should leave room for extensions.
 
-## 8. Phase 3 — Develop GEOS-Max on the validated emulator
+## 8. Phase 3 — Develop GEOS-Pro on the validated emulator
 
 **Objective:** implement and debug native software against the agreed machine interface before FPGA hardware integration.
 
-### GEOS-Max work packages
+### GEOS-Pro work packages
 
 1. **Native bootstrap and ABI:** initialisation from firmware, 65816 native-mode entry, native vectors/interrupts, near/far calling rules and register preservation.
 2. **Kernel and HAL:** extended-bank allocator, system-service dispatch, input/timer queues, native storage and errors.
-3. **MHIRES API:** 640×200×4 framebuffer, palette, clipping, fonts, text, rectangles/blits, dirty-region tracking and cursor.
+3. **PHIRES API:** 640×200×4 framebuffer, palette, clipping, fonts, text, rectangles/blits, dirty-region tracking and cursor.
 4. **Windowing and widgets:** menus, modal dialogs, lists, buttons, text fields, event dispatch and resource loading.
 5. **Desktop/file manager:** mount volumes, browse/copy/open/rename files, launch native applications, display failures.
 6. **Application SDK:** compact native binary format, loader, linker conventions, host resource compiler and sample templates.
@@ -243,35 +243,35 @@ Before calling it ready for GEOS-Max work, demonstrate repeatable instruction st
 
 Native GUI layouts may be authored in JSON and compiled on the **host** into compact resources; native runtime JSON parsing is optional. One foreground application and cooperative event handlers are the first scheduling model.
 
-All GEOS-Max features must have emulator-driven regression scenarios and remain aligned to the bank-`$EF` hardware register contract rather than depending on emulator-private APIs.
+All GEOS-Pro features must have emulator-driven regression scenarios and remain aligned to the bank-`$EF` hardware register contract rather than depending on emulator-private APIs.
 
-**Gate S1 — usable native machine in emulation:** boots GEOS-Max, opens a window, handles mouse/keyboard input, renders MHIRES, mounts storage and launches a native sample application repeatably.
+**Gate S1 — usable native machine in emulation:** boots GEOS-Pro, opens a window, handles mouse/keyboard input, renders PHIRES, mounts storage and launches a native sample application repeatably.
 
 **Gate S2 — useful desktop baseline:** file manager, dialogs, loader and at least one nontrivial native application operate with stable ABI and actionable test failures.
 
-ProDOS reverse engineering/application adaptation is **optional private research**, not a condition for first GEOS-Max delivery.
+ProDOS reverse engineering/application adaptation is **optional private research**, not a condition for first GEOS-Pro delivery.
 
 ## 9. Phase 4 — Translate the validated architecture into RTL
 
-**Trigger:** emulator Apple IIe compatibility is accepted (E2), Apple IImax machine architecture is stable (E1), and GEOS-Max has begun exercising native interfaces. This protects RTL work from premature architecture churn.
+**Trigger:** emulator Apple IIe compatibility is accepted (E2), Apple II Pro machine architecture is stable (E1), and GEOS-Pro has begun exercising native interfaces. This protects RTL work from premature architecture churn.
 
-**Destination:** `rtl/` and `fpga/` of **`keroblabs/apple-ii-max`**, which becomes the authoritative home of Apple IImax hardware. The independent **`keroblabs/apple_fpga`** repository remains available for its own Apple IIe work.
+**Destination:** `rtl/` and `fpga/` of **`keroblabs/apple-ii-pro`**, which becomes the authoritative home of Apple II Pro hardware. The independent **`keroblabs/apple_fpga`** repository remains available for its own Apple IIe work.
 
 ### Migration method
 
-- Inventory source modules and dependencies from Apple FPGA and the previous IIgs work; import only what serves the IImax contract, with recorded source commit and licensing/provenance.
+- Inventory source modules and dependencies from Apple FPGA and the previous IIgs work; import only what serves the Apple II Pro contract, with recorded source commit and licensing/provenance.
 - Preserve the verified Apple IIe softswitch behaviour and slot decoding, rather than reimplementing them unnecessarily.
 - Bring up the QMTECH 5CEFA5 board clocking, reset, VGA timing and 32-bit SDRAM interface.
 - Integrate a suitable 65816 RTL core, 24-bit bus adapter, legacy MMU, bank-`$EF` register decoder and bank-`$FF` firmware access.
 - Implement SDRAM byte masking, 64-bit read-buffer prototype, explicit CPU stalls/waits and video-DMA scheduling/line buffers.
-- Preserve original Apple IIe display modes; implement MHIRES-200 with programmable framebuffer base. Keep MHIRES-480 conditional on measured performance.
+- Preserve original Apple IIe display modes; implement PHIRES-200 with programmable framebuffer base. Keep PHIRES-480 conditional on measured performance.
 - Test the same ROM, devices and representative programs used in the emulator, with automated differential checks on defined functional outputs.
 
 ### Emulator-to-RTL correspondence
 
 Maintain a parity matrix with each feature's status in: **architecture spec → emulator → simulation testbench → hardware test**.
 
-Examples: reset vector, language-card side effects, slot select, program/data read, write-invalidation, `REGSEL`, MHIRES scanline mapping, byte-lane mask, interrupt timing and storage transfer.
+Examples: reset vector, language-card side effects, slot select, program/data read, write-invalidation, `REGSEL`, PHIRES scanline mapping, byte-lane mask, interrupt timing and storage transfer.
 
 The emulator defines **guest-visible functional expectations**. Hardware cycle timing is separately validated against the SDRAM datasheet and actual board; do not assume emulator performance proves physical wait-state-free operation.
 
@@ -279,7 +279,7 @@ The emulator defines **guest-visible functional expectations**. Hardware cycle t
 
 **Gate H2 — compatibility parity:** Apple IIe ROM and core compatibility test suite behave consistently on emulator and FPGA, with documented permissible timing differences.
 
-**Gate H3 — native parity:** GEOS-Max boots on the FPGA, accesses bank-`$EF` native devices, displays MHIRES and runs the same application tests as in the emulator.
+**Gate H3 — native parity:** GEOS-Pro boots on the FPGA, accesses bank-`$EF` native devices, displays PHIRES and runs the same application tests as in the emulator.
 
 Do not declare H2/H3 solely because a screenshot looks correct.
 
@@ -289,13 +289,13 @@ After native functionality is repeatable on emulator and FPGA:
 
 - Expand application APIs, documentation, templates and reusable GUI resources.
 - Measure real redraw/input latency, CPU stalls, storage throughput, video DMA margins and code/data memory consumption.
-- Decide on MHIRES 640×480 support using **actual workloads**, not SDRAM peak bandwidth alone.
+- Decide on PHIRES 640×480 support using **actual workloads**, not SDRAM peak bandwidth alone.
 - Grow ProDOS filesystem compatibility and broaden the exclusive guest-session test matrix.
 - Privately investigate the selected MLI shim/application adaptation research path; keep research results and third-party derivatives out of public commits.
 - Optionally add small hardware graphics assists only after measurable need is demonstrated.
 - Keep emulator and RTL regression suites running as the OS evolves; the emulator remains the primary debugging environment.
 
-The success criterion is a useful, maintainable Apple IImax computer and software ecosystem—not matching every Apple IIgs feature or transparently executing every Apple II application.
+The success criterion is a useful, maintainable Apple II Pro computer and software ecosystem—not matching every Apple IIgs feature or transparently executing every Apple II application.
 
 ## 11. Milestone dependency summary
 
@@ -306,7 +306,7 @@ Existing IIgs-oriented emulator
  E0  Known-good baseline and inventory
            |
            v
- E1  Apple IImax hardware model complete
+ E1  Apple II Pro hardware model complete
            |
            v
  E2  Apple IIe firmware/peripheral compatibility proven
@@ -314,7 +314,7 @@ Existing IIgs-oriented emulator
            +----------------------+
            |                      |
            v                      |
- GEOS-Max native development      |
+ GEOS-Pro native development      |
            |                      |
            v                      |
  S1 / S2 usable software          |
@@ -336,7 +336,7 @@ RTL bring-up may begin once the software effort has begun and the architecture i
 ## 12. Work tracking and review policy
 
 - Treat this roadmap as a **sequencing and acceptance document**, not a micro-level emulator design. Its emulator requirements define what the tooling must enable, not how a specific codebase implements them.
-- Review each technical domain in separate discussions and specifications: emulator architecture, Apple IIe compatibility matrix, register ABI, GEOS-Max ABI, RTL memory subsystem and ProDOS research strategy.
+- Review each technical domain in separate discussions and specifications: emulator architecture, Apple IIe compatibility matrix, register ABI, GEOS-Pro ABI, RTL memory subsystem and ProDOS research strategy.
 - Keep a running architectural decision log recording accepted choices, rejected alternatives, measurements and affected docs.
 - Land changes with specific test evidence and commit messages that identify scope and status; do not confuse an experimental implementation with a completed milestone.
 - Update Documents 00–02 when roadmap decisions alter the product end goal, memory/hardware contract or software architecture.
@@ -347,9 +347,9 @@ RTL bring-up may begin once the software effort has begun and the architecture i
 1. Inspect the existing functioning emulator and produce an **inventory/gap report** against Document 01—without committing to a rewrite or debugger framework.
 2. Draft the Apple IIe firmware/peripheral **compatibility matrix** and identify which fixtures can legally be redistributed versus supplied locally.
 3. Decide the emulator's minimum machine-state/debug API contract and establish automated build/run tests.
-4. Port the smallest Apple IImax memory-map, ROM and CPU-mode semantics into the emulator; validate them before expanding devices.
+4. Port the smallest Apple II Pro memory-map, ROM and CPU-mode semantics into the emulator; validate them before expanding devices.
 5. Establish the first full Apple IIe boot-and-peripheral compatibility gate.
-6. Begin GEOS-Max bootstrap, native GUI and application development **on that validated emulator**.
-7. Only then integrate the Apple IImax FPGA/RTL work and measure the real SDRAM/cache/VGA constraints.
+6. Begin GEOS-Pro bootstrap, native GUI and application development **on that validated emulator**.
+7. Only then integrate the Apple II Pro FPGA/RTL work and measure the real SDRAM/cache/VGA constraints.
 
 **Current status:** Repository documentation exists; the owner's existing emulator is reported functional but has **not yet been inventoried, imported or benchmarked here**. No FPGA or software gate in this roadmap is presently claimed as passed.

@@ -1,25 +1,27 @@
-# Apple IImax — Project Introduction
+# Apple II Pro — Project Introduction
 
-**Project:** Apple IImax  
-**Repository:** `keroblabs/apple-ii-max`  
+**Project:** Apple II Pro  
+**Repository:** `keroblabs/apple-ii-pro`  
 **Document:** 00 — project purpose and end goal  
 **Status:** Initial architectural baseline; implementation and benchmarks pending  
 **Date:** 2026-10-19
 **Development strategy:** emulator-first; see [03-implementation-roadmap.md](03-implementation-roadmap.md)
 
+**Naming decision (2026-10-20):** The platform is **Apple II Pro**, its provisional native operating environment is **GEOS-Pro**, and the native video mode is **PHIRES (Pro High Resolution)**. These naming changes do not alter the agreed emulator-first strategy, compatibility scope, or technical acceptance criteria.
+
 ## 1. Vision
 
-Apple IImax is a new FPGA-based computer inspired by the Apple IIe, built around a 65816 processor and an extended memory and graphics architecture. Its distinguishing ambition is to be **a useful Apple IIe-compatible computer and a new, independent 16-bit Apple-like platform** on which we develop a native graphical operating environment.
+Apple II Pro is a new FPGA-based computer inspired by the Apple IIe, built around a 65816 processor and an extended memory and graphics architecture. Its distinguishing ambition is to be **a useful Apple IIe-compatible computer and a new, independent 16-bit Apple-like platform** on which we develop a native graphical operating environment.
 
 It is **not** an Apple IIgs clone, and full IIgs compatibility is not a goal. We deliberately retain the parts of the Apple IIe that are useful for software compatibility while replacing or augmenting the subsystems that constrain native software: memory capacity, CPU capabilities, storage interfaces, input facilities, and graphics.
 
-The machine is intended to boot and run Apple IIe software in a compatibility configuration, and then support a dedicated Apple IImax native environment with windows, icons, menus, dialogs, a file manager, launchable applications, and a programmable graphics system. It should remain approachable to develop for, understandable in RTL, and testable before the FPGA integration is complete.
+The machine is intended to boot and run Apple IIe software in a compatibility configuration, and then support a dedicated Apple II Pro native environment with windows, icons, menus, dialogs, a file manager, launchable applications, and a programmable graphics system. It should remain approachable to develop for, understandable in RTL, and testable before the FPGA integration is complete.
 
-**Guiding principle:** preserve the Apple IIe contract where compatibility requires it; add Apple IImax capabilities without reproducing the complexity of the Apple IIgs.
+**Guiding principle:** preserve the Apple IIe contract where compatibility requires it; add Apple II Pro capabilities without reproducing the complexity of the Apple IIgs.
 
 ## 2. What makes the machine different
 
-| Area | Apple IImax direction |
+| Area | Apple II Pro direction |
 | --- | --- |
 | CPU | 65816, emulation mode for legacy software and native mode for extended software |
 | CPU target | Nominal maximum 2.8 MHz initially; provisional until measured |
@@ -30,9 +32,9 @@ The machine is intended to boot and run Apple IIe software in a compatibility co
 | Firmware | 64 KiB ROM in bank `$FF`; appropriate mirror into bank `$00` for reset and legacy firmware |
 | Legacy I/O | Retain Apple IIe softswitches and `DEVSEL` / `IOSEL` / `IOSTB` decoding |
 | Legacy display | Apple IIe text, LORES, HIRES, and double-high-resolution (DHIRES), including applicable mixed/80-column variations |
-| Native display | **MHIRES**, initially 640×200 at 4 bits per pixel, presented via VGA with vertical replication |
+| Native display | **PHIRES**, initially 640×200 at 4 bits per pixel, presented via VGA with vertical replication |
 | Display output | VGA only; the separate Apple FPGA project's LCD is explicitly out of scope |
-| Native software | **GEOS-Max** (provisional name), a GEOS-inspired graphical operating environment with a documented application and driver ABI |
+| Native software | **GEOS-Pro** (provisional name), a GEOS-inspired graphical operating environment with a documented application and driver ABI |
 | Legacy software strategy | Native access to ProDOS-formatted storage; Apple IIe compatibility boot; investigate launching selected ProDOS 8 applications from the native desktop |
 
 ## 3. Intended user experience
@@ -40,7 +42,7 @@ The machine is intended to boot and run Apple IIe software in a compatibility co
 The end goal is a computer that can:
 
 1. Start in a documented, reproducible configuration and provide a dependable Apple IIe-compatible experience.
-2. Boot an Apple IImax firmware and enter a native graphical desktop.
+2. Boot an Apple II Pro firmware and enter a native graphical desktop.
 3. Display windows, menus, icons, text, buttons, lists, dialogs, and application screens through a reusable GUI kernel.
 4. Browse storage, copy and organise files, and launch native applications.
 5. Use modernised native input and storage devices through bank-`$EF` interfaces while retaining appropriate legacy-facing peripheral functionality.
@@ -51,9 +53,9 @@ The desktop should feel like a small, complete operating environment, **not mere
 
 ## 4. Graphics philosophy
 
-All original Apple IIe display modes remain part of the compatibility design. Apple IImax adds **MHIRES (Max High Resolution)** as its own native graphics mode.
+All original Apple IIe display modes remain part of the compatibility design. Apple II Pro adds **PHIRES (Pro High Resolution)** as its own native graphics mode.
 
-### Initial MHIRES target
+### Initial PHIRES target
 
 - Logical framebuffer: **640×200 pixels, 4 bpp, 16 palette indices**.
 - Framebuffer size: **64,000 bytes (62.5 KiB)**; one image fits in a single 64 KiB 65816 bank if appropriately placed.
@@ -64,15 +66,15 @@ All original Apple IIe display modes remain part of the compatibility design. Ap
 
 ### Open possibility: 640×480×4 bpp
 
-A **640×480 MHIRES variant** remains a serious candidate, not a promised feature of the first implementation. It requires 153,600 bytes (150 KiB), crosses 65816 bank boundaries, increases display bandwidth, and increases the CPU's drawing workload. Raw SDRAM throughput alone is unlikely to be the decisive problem; CPU rendering cost, actual arbitration latency, and GUI ergonomics also matter.
+A **640×480 PHIRES variant** remains a serious candidate, not a promised feature of the first implementation. It requires 153,600 bytes (150 KiB), crosses 65816 bank boundaries, increases display bandwidth, and increases the CPU's drawing workload. Raw SDRAM throughput alone is unlikely to be the decisive problem; CPU rendering cost, actual arbitration latency, and GUI ergonomics also matter.
 
 The video architecture should avoid assuming a hard-coded 200-line source if this adds little complexity, while **acceptance of 640×480 is contingent on benchmarks**. We should not expand native graphics at the expense of a responsive GUI or a reliable Apple IIe fallback.
 
-No LCD path, Apple IIgs SHGR compatibility, ADB compatibility, or IIgs-specific audio system is required for the first Apple IImax.
+No LCD path, Apple IIgs SHGR compatibility, ADB compatibility, or IIgs-specific audio system is required for the first Apple II Pro.
 
 ## 5. Native software end goal
 
-The planned operating environment, provisionally named **GEOS-Max**, includes:
+The planned operating environment, provisionally named **GEOS-Pro**, includes:
 
 - A small native kernel/runtime with memory allocation, drivers, file operations, timers, input events and application loading.
 - A graphics and widget library with a stable API, resource handling, clipping and redraw/dirty-region semantics.
@@ -100,17 +102,17 @@ The detailed alternatives, trade-offs and proof-of-concept plan belong in [02-so
 
 ## 7. Relationship to other projects
 
-- **[Apple FPGA](https://github.com/keroblabs/apple_fpga):** separate Apple IIe development. Its Apple IIe softswitch, existing VGA logic, memory knowledge and verification lessons are candidates for deliberate reuse. Apple IImax must not silently modify that project or assume any particular historical directory layout is fixed.
-- **[Embedded X11](https://github.com/keroblabs/embedded_x11):** separate, higher-end portable graphical/windowing project. Share architectural lessons where useful; do not make the Apple IImax OS depend on TinyX, JWM or X11.
+- **[Apple FPGA](https://github.com/keroblabs/apple_fpga):** separate Apple IIe development. Its Apple IIe softswitch, existing VGA logic, memory knowledge and verification lessons are candidates for deliberate reuse. Apple II Pro must not silently modify that project or assume any particular historical directory layout is fixed.
+- **[Embedded X11](https://github.com/keroblabs/embedded_x11):** separate, higher-end portable graphical/windowing project. Share architectural lessons where useful; do not make the Apple II Pro OS depend on TinyX, JWM or X11.
 
-Apple IImax is a **separate repository and product**, not a permanent development branch of Apple FPGA. We may import or reimplement validated components with appropriate provenance and tests. Each project retains its own scope, compatibility goals and roadmap.
+Apple II Pro is a **separate repository and product**, not a permanent development branch of Apple FPGA. We may import or reimplement validated components with appropriate provenance and tests. Each project retains its own scope, compatibility goals and roadmap.
 
 ## 8. Engineering principles
 
 1. Keep legacy and native interfaces distinct and explicit.
 2. Build the smallest correct memory and video hardware, then optimise based on measurements.
 3. Provide wait-state capability from the outset; a cache-hit estimate is not a timing guarantee.
-4. Avoid permanent video shadow memory: legacy scanning uses MAIN/AUX backing; MHIRES scans its selected SDRAM framebuffer.
+4. Avoid permanent video shadow memory: legacy scanning uses MAIN/AUX backing; PHIRES scans its selected SDRAM framebuffer.
 5. Use host simulation, automated test benches, reference traces and repeatable acceptance criteria before relying on board observations.
 6. Keep both the hardware register ABI and the software API documented and versioned.
 7. Mark unverified claims as provisional; do not call an RTL component hardware-validated solely because simulations pass.
@@ -118,7 +120,7 @@ Apple IImax is a **separate repository and product**, not a permanent developmen
 
 ## 9. Initial delivery milestones
 
-**Sequence decision (2026-10-19):** begin with the owner's existing functioning IIgs-oriented emulator, adapt it to the entire Apple IImax machine contract, and validate original Apple IIe firmware/peripherals in that emulator. Then use the validated emulator to develop GEOS-Max and native applications **before migrating the Apple IImax hardware implementation into RTL in this repository**. The table below describes broad deliverables rather than a strict chronological gate sequence; [Document 03](03-implementation-roadmap.md) is authoritative for the implementation order and acceptance gates.
+**Sequence decision (2026-10-19):** begin with the owner's existing functioning IIgs-oriented emulator, adapt it to the entire Apple II Pro machine contract, and validate original Apple IIe firmware/peripherals in that emulator. Then use the validated emulator to develop GEOS-Pro and native applications **before migrating the Apple II Pro hardware implementation into RTL in this repository**. The table below describes broad deliverables rather than a strict chronological gate sequence; [Document 03](03-implementation-roadmap.md) is authoritative for the implementation order and acceptance gates.
 
 
 | Phase | Milestone | Proof |
@@ -126,8 +128,8 @@ Apple IImax is a **separate repository and product**, not a permanent developmen
 | A | Board and SDRAM bring-up | Deterministic memory tests, measured timing, working VGA output |
 | B | Apple IIe compatibility foundation | ROM reset, legacy memory/softswitch tests, text and original graphics modes |
 | C | 65816 native memory | Validated 24-bit addressing, ROM bank, `REGSEL`, RAM banks and CPU stalls |
-| D | Cached SDRAM + display arbitration | Burst/cache tests, byte writes, continuous legacy/MHIRES scan without underruns |
-| E | MHIRES and input/storage | Native framebuffer, palette, mouse, storage and framebuffer switching |
+| D | Cached SDRAM + display arbitration | Burst/cache tests, byte writes, continuous legacy/PHIRES scan without underruns |
+| E | PHIRES and input/storage | Native framebuffer, palette, mouse, storage and framebuffer switching |
 | F | Native GUI and application platform | Desktop, dialogs, file manager and first native application |
 | G | ProDOS interoperability | Filesystem interchange followed by independently evaluated executable-compatibility pilots |
 
@@ -137,7 +139,7 @@ The phases are an ordering guide, not an assertion that previous Apple FPGA hard
 
 - [00-introduction.md](00-introduction.md) — motivation, intended experience and non-goals.
 - [01-hardware-architecture.md](01-hardware-architecture.md) — working hardware contracts, timing assumptions and open decisions.
-- [02-software-architecture.md](02-software-architecture.md) — GEOS-Max native OS, applications, development workflow and ProDOS compatibility research.
-- [03-implementation-roadmap.md](03-implementation-roadmap.md) — emulator-first migration, Apple IIe validation, debugging infrastructure, GEOS-Max development and RTL parity.
+- [02-software-architecture.md](02-software-architecture.md) — GEOS-Pro native OS, applications, development workflow and ProDOS compatibility research.
+- [03-implementation-roadmap.md](03-implementation-roadmap.md) — emulator-first migration, Apple IIe validation, debugging infrastructure, GEOS-Pro development and RTL parity.
 
 These initial documents intentionally distinguish **agreed direction**, **provisional engineering targets**, and **open investigations**. Future design-review sessions may refine individual documents without rewriting the project's overall purpose.

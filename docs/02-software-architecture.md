@@ -1,18 +1,18 @@
-# Apple IImax — GEOS-Max Software Architecture
+# Apple II Pro — GEOS-Pro Software Architecture
 
-**Document:** 02 — GEOS-Max native operating environment and compatibility strategy  
-**Repository:** `keroblabs/apple-ii-max`  
+**Document:** 02 — GEOS-Pro native operating environment and compatibility strategy  
+**Repository:** `keroblabs/apple-ii-pro`  
 **Status:** Software design direction and research programme; interfaces and tooling not yet frozen  
 **Date:** 2026-10-19  
 **Related:** [Introduction](00-introduction.md) · [Hardware architecture](01-hardware-architecture.md) · [Implementation roadmap](03-implementation-roadmap.md)
 
 ## 1. Mission
 
-**GEOS-Max** (provisional name) is the native Apple IImax operating environment: a **GEOS-inspired desktop and application platform**, purpose-built for a 65816 running on a machine with approximately 1 MiB RAM, a preliminary maximum CPU clock of 2.8 MHz, an MHIRES framebuffer, and a separate bank-`$EF` native-device interface.
+**GEOS-Pro** (provisional name) is the native Apple II Pro operating environment: a **GEOS-inspired desktop and application platform**, purpose-built for a 65816 running on a machine with approximately 1 MiB RAM, a preliminary maximum CPU clock of 2.8 MHz, an PHIRES framebuffer, and a separate bank-`$EF` native-device interface.
 
 The goal is **more than a graphical launcher**. It is a coherent software stack providing startup, drivers, filesystem access, a window/widget API, a desktop/file manager, an application loader and a viable development workflow. Historical Apple II software matters too: the native environment should exchange files with ProDOS, allow a dependable way to enter legacy Apple IIe execution, and investigate whether selected ProDOS 8 programs can run from the graphical desktop.
 
-GEOS-Max is **our own operating system**, not a port of Apple IIgs GS/OS or a copy of GEOS internals, and it does not depend on the X11 protocol. We may take inspiration from GEOS, the Apple II Desktop, Smalltalk-like resource composition and our separate Embedded X11 work, but Apple IImax has its own ABI and constraints.
+GEOS-Pro is **our own operating system**, not a port of Apple IIgs GS/OS or a copy of GEOS internals, and it does not depend on the X11 protocol. We may take inspiration from GEOS, the Apple II Desktop, Smalltalk-like resource composition and our separate Embedded X11 work, but Apple II Pro has its own ABI and constraints.
 
 ## 2. Constraints that shape the OS
 
@@ -25,7 +25,7 @@ GEOS-Max is **our own operating system**, not a port of Apple IIgs GS/OS or a co
 | Bank `$01` backs auxiliary legacy memory | Allocator and guest-execution plan must reserve display and compatibility regions appropriately |
 | `$02–$0F` intended as ordinary extended memory | Prefer native code/data and large resources here |
 | Bank `$EF` maps hardware registers | Access via drivers/HAL, not arbitrary application writes |
-| MHIRES-200 is 64,000 bytes | A single bank-aligned framebuffer is convenient; double buffering uses two such allocations |
+| PHIRES-200 is 64,000 bytes | A single bank-aligned framebuffer is convenient; double buffering uses two such allocations |
 | 2.8 MHz and byte-oriented external CPU transfers | Minimise copying and redraw; use compact data structures and event-driven execution |
 | No memory protection | Applications are trusted initially; robust contracts and debugging matter more than isolation claims |
 
@@ -44,12 +44,12 @@ A different CPU emulation/native flag is **not** itself a protected process boun
                          |
      File systems / block devices / input / timers / HAL
                          |
-       65816 + SDRAM + legacy video + MHIRES + REGSEL
+       65816 + SDRAM + legacy video + PHIRES + REGSEL
 ```
 
 ### 3.1 Bootstrap and runtime kernel
 
-Apple IImax-aware firmware starts from the bank-zero reset mirror, completes hardware initialisation, establishes native 65816 state and transfers to the resident kernel. The kernel exposes a **versioned system-service interface** rather than requiring applications to call undocumented ROM entry points.
+Apple II Pro-aware firmware starts from the bank-zero reset mirror, completes hardware initialisation, establishes native 65816 state and transfers to the resident kernel. The kernel exposes a **versioned system-service interface** rather than requiring applications to call undocumented ROM entry points.
 
 Kernel responsibilities initially include:
 
@@ -86,7 +86,7 @@ The proposed resident driver registry uses bank-aware function pointers and entr
 
 The graphics kernel handles logical surfaces, clipping, dirty rectangles, bitmap/text rendering, palette management, z-order (when applicable), menus and controls.
 
-**Initial policy:** the desktop owns the MHIRES framebuffer. Applications draw via a supported API into it or into small off-screen bitmaps, not unconditionally into video memory. The kernel coalesces dirty regions and minimises writes. Avoid compulsory full-screen redraws at 2.8 MHz.
+**Initial policy:** the desktop owns the PHIRES framebuffer. Applications draw via a supported API into it or into small off-screen bitmaps, not unconditionally into video memory. The kernel coalesces dirty regions and minimises writes. Avoid compulsory full-screen redraws at 2.8 MHz.
 
 Proposed minimal drawing API semantics:
 
@@ -96,7 +96,7 @@ Proposed minimal drawing API semantics:
 - Invalidate a rectangle and process paint events.
 - Present accumulated updates, optionally flipping the configured framebuffer on vblank.
 
-The MHIRES palette has 16 entries; design icons/widgets to be legible at 640×200. The VGA presentation of MHIRES-200 initially doubles rows and centres the 640×400 active area. A future 640×480 framebuffer is possible, **not promised**.
+The PHIRES palette has 16 entries; design icons/widgets to be legible at 640×200. The VGA presentation of PHIRES-200 initially doubles rows and centres the 640×400 active area. A future 640×480 framebuffer is possible, **not promised**.
 
 Legacy text/LORES/HIRES/DHIRES modes are separate display contracts; a generic native window is not required to composite over arbitrary legacy pixels in the first version.
 
@@ -178,14 +178,14 @@ A native filesystem implementation should initially be straightforward and testa
 
 ## 6. ProDOS: distinguish three very different compatibility objectives
 
-**Research boundary:** Reverse engineering and adaptation of third-party legacy applications are strictly **private, noncommercial research activities**. They are **not for publication, distribution or commercial reuse**. This restriction applies to disassemblies, annotated proprietary binaries, patches derived from third-party code, application-specific traces and private research notes. The public Apple IImax project may describe generic compatibility interfaces and tests that it independently owns, but it must not publish the private reverse-engineering outputs. No copyrighted ROM/application/disk image may be committed to this public repository unless redistribution rights have been established. Research-only intent does not itself grant copyright or licence permission; obtain and use software lawfully.
+**Research boundary:** Reverse engineering and adaptation of third-party legacy applications are strictly **private, noncommercial research activities**. They are **not for publication, distribution or commercial reuse**. This restriction applies to disassemblies, annotated proprietary binaries, patches derived from third-party code, application-specific traces and private research notes. The public Apple II Pro project may describe generic compatibility interfaces and tests that it independently owns, but it must not publish the private reverse-engineering outputs. No copyrighted ROM/application/disk image may be committed to this public repository unless redistribution rights have been established. Research-only intent does not itself grant copyright or licence permission; obtain and use software lawfully.
 
 
 “Run ProDOS applications like Wine runs Windows software” is an interesting and valuable research direction, but it has technical limits. Wine translates operating-system APIs in an environment with process/address-space conventions; an Apple II ProDOS 8 application may depend on direct 6502 execution **and** arbitrary Apple IIe hardware state. We therefore must not equate implementing ProDOS file calls with full binary compatibility.
 
 ### Level 1 — ProDOS filesystem interoperability (recommended first)
 
-Implement a native ProDOS filesystem driver that can mount supported ProDOS volumes/images through the Apple IImax block-device API and manipulate files without starting the historical ProDOS kernel.
+Implement a native ProDOS filesystem driver that can mount supported ProDOS volumes/images through the Apple II Pro block-device API and manipulate files without starting the historical ProDOS kernel.
 
 This includes block layout, pathnames, file types/auxiliary types, file metadata, directory traversal and data/resource conventions as applicable to the supported ProDOS version. Establish read-only correctness first, then safe writes and image-level regression tests. The native desktop can browse ProDOS volumes even if no legacy program execution is implemented.
 
@@ -197,13 +197,13 @@ Launch a ProDOS 8 image/program by entering a controlled **Apple IIe compatibili
 
 The 65816 can execute 6502/65C02-compatible code in emulation mode. The real machine still needs appropriate zero page, stack, language-card state, softswitches, video mode and peripheral behaviour. Use authentic firmware/OS media that the developer is entitled to use.
 
-For the first reliable version, accept that this is **exclusive**, not a window inside MHIRES. The native GUI can hand off to the legacy session, and a reset/reboot return path is acceptable. Preservation and restoration of the entire native desktop without reboot is an investigation, not an initial promise.
+For the first reliable version, accept that this is **exclusive**, not a window inside PHIRES. The native GUI can hand off to the legacy session, and a reset/reboot return path is acceptable. Preservation and restoration of the entire native desktop without reboot is an investigation, not an initial promise.
 
 A later fast-switch design might save all required CPU state, MAIN/AUX RAM, video/softswitch state and device context into reserved extended RAM, then restore it. This is a **software session snapshot**, not IIgs-style hardware video shadow RAM. It requires careful accounting for zero page, stack, hardware side effects, interrupts and any direct memory writes.
 
 **Result:** highest near-term confidence for running a broad class of real legacy applications, though not integrated into a native window.
 
-### Level 3 — MLI-compatible execution inside an Apple IImax runtime (research)
+### Level 3 — MLI-compatible execution inside an Apple II Pro runtime (research)
 
 Investigate launching **selected ProDOS 8 binaries** with a compatibility layer that implements their expected ProDOS Machine Language Interface (MLI), related globals and common firmware conventions.
 
@@ -230,7 +230,7 @@ Possible implementation approaches:
 - Programs dependent on timing, undocumented behaviour, specific cards or precise display effects.
 - Failure recovery when a guest corrupts RAM, disables interrupts, never returns or assumes it controls the entire machine.
 
-For a native MHIRES desktop and a directly executed legacy guest to coexist **without an isolated address space**, these conflicts are fundamental. A full windowed solution likely requires **software emulation, additional memory-context translation hardware, program-specific adaptation**, or an explicitly restricted subset of guest programs.
+For a native PHIRES desktop and a directly executed legacy guest to coexist **without an isolated address space**, these conflicts are fundamental. A full windowed solution likely requires **software emulation, additional memory-context translation hardware, program-specific adaptation**, or an explicitly restricted subset of guest programs.
 
 The OS must never claim universal “Wine-like” compatibility merely because the MLI subset works.
 
@@ -254,7 +254,7 @@ The phrase “reverse engineer ProDOS applications” is therefore a **private r
 | Stage | Experiment | Pass criterion |
 | --- | --- | --- |
 | P0 | Read a ProDOS volume/image in host tests | Directory/file data matches independent reference |
-| P1 | Mount the same data from native Apple IImax OS | File manager can open files reliably |
+| P1 | Mount the same data from native Apple II Pro OS | File manager can open files reliably |
 | P2 | Boot genuine ProDOS in exclusive IIe mode | Repeatable boot, file access and keyboard/video behaviour |
 | P3 | Trace a minimal MLI-only program | Every `$BF00` call and its parameters/results are accounted for |
 | P4 | Substitute selected MLI file services in an isolated test session | Same observable behaviour as reference ProDOS for that test |
@@ -266,7 +266,7 @@ Keep **binary execution tests separate from filesystem parsing tests**. Success 
 
 ## 8. Development workflow and tools
 
-GEOS-Max development starts **on the Apple IImax emulator**, after its hardware model has passed the Apple IIe compatibility gate. The emulator is the primary execution, diagnostic, automated-test and investigation environment, not a stopgap used only until FPGA hardware exists. Full emulator capability, including bank-aware tracing, stepping, breakpoints, watchpoints, device inspection, deterministic replay and state snapshots, is a project-level requirement specified by [Document 03](03-implementation-roadmap.md); the particular implementation is deliberately not selected here.
+GEOS-Pro development starts **on the Apple II Pro emulator**, after its hardware model has passed the Apple IIe compatibility gate. The emulator is the primary execution, diagnostic, automated-test and investigation environment, not a stopgap used only until FPGA hardware exists. Full emulator capability, including bank-aware tracing, stepping, breakpoints, watchpoints, device inspection, deterministic replay and state snapshots, is a project-level requirement specified by [Document 03](03-implementation-roadmap.md); the particular implementation is deliberately not selected here.
 
 The software project should be developed and verified **before depending on a physical VGA display or native storage controller**.
 
@@ -275,7 +275,7 @@ The software project should be developed and verified **before depending on a ph
 1. Author native kernel, GUI and applications in a version-controlled tree.
 2. Build with a cross-assembler/compiler/linker targeting 65816; choose a toolchain only after checking 65816 native-code quality, banked relocations and debugging support.
 3. Run host-side unit tests for filesystems, event queues, GUI resources and geometry.
-4. Build and run the Apple IImax machine model/emulator using the same firmware images, address map and hardware-register contract as FPGA.
+4. Build and run the Apple II Pro machine model/emulator using the same firmware images, address map and hardware-register contract as FPGA.
 5. Test native programs, ProDOS guest sessions and display updates using automated traces/screenshots and deterministic disk images.
 6. Run RTL/SDRAM/video integration tests with cycle-level diagnostics.
 7. Deploy to the QMTECH hardware only once the relevant integration gate passes; compare traces and performance against the emulator.
@@ -286,11 +286,11 @@ An SDL- or equivalent-based host display can emulate VGA output for testing; tha
 
 ```text
 emulator/       machine model, diagnostics, stepping and trace tools
-validation/     Apple IIe and IImax test images, manifests and fixtures
+validation/     Apple IIe and Apple II Pro test images, manifests and fixtures
 rtl/            hardware RTL (later migration)
 fpga/           QMTECH 5CEFA5 constraints/implementation
 firmware/       boot code, vectors, fixed ROM services
-geos-max/
+geos-pro/
   kernel/       memory, interrupts, event loop, loader, diagnostics
   hal/          hardware-neutral driver contracts
   drivers/      video, input, block devices, timers
@@ -323,7 +323,7 @@ This is a suggested eventual organisation, not a claim that those files currentl
 
 **SW-1 — platform services:** memory allocator, bank-aware calls, input queue, video driver, block-device API.
 
-**SW-2 — GUI baseline:** MHIRES screen, palette, fonts, pointer, clipping, widgets, dialogs and retained desktop.
+**SW-2 — GUI baseline:** PHIRES screen, palette, fonts, pointer, clipping, widgets, dialogs and retained desktop.
 
 **SW-3 — executable platform:** native application format, loader, stable ABI and resource compiler.
 
@@ -333,7 +333,7 @@ This is a suggested eventual organisation, not a claim that those files currentl
 
 **SW-6 — selected ProDOS binary compatibility research:** bounded MLI shim proof-of-concept and compatibility profiles; only expand scope if objective tests justify it.
 
-These are **GEOS-Max software milestones**, subordinate to the emulator-first acceptance gates in [03-implementation-roadmap.md](03-implementation-roadmap.md). Hardware RTL migration starts after the emulator has validated the Apple IImax hardware contract and software development is underway; **none of these milestones is assumed complete today**.
+These are **GEOS-Pro software milestones**, subordinate to the emulator-first acceptance gates in [03-implementation-roadmap.md](03-implementation-roadmap.md). Hardware RTL migration starts after the emulator has validated the Apple II Pro hardware contract and software development is underway; **none of these milestones is assumed complete today**.
 
 ## 10. Explicit decisions still open
 
@@ -346,7 +346,7 @@ These are **GEOS-Max software milestones**, subordinate to the emulator-first ac
 7. Which first ProDOS 8 target(s) will supply a representative, legally usable MLI trace and hardware-compatibility test?
 8. Can a direct-execution legacy session safely return to the desktop, or should the first implementation intentionally reboot?
 9. Is there enough measured performance for a software-emulated, windowed guest, or is exclusive guest execution the better end state?
-10. Under what measurements is 640×480 MHIRES worth enabling?
+10. Under what measurements is 640×480 PHIRES worth enabling?
 
 ## 11. Research references
 
